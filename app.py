@@ -89,96 +89,96 @@ def save_uploaded_file(file_storage):
 base_css_js = """
 <!doctype html>
 <html lang="pt-br">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Conferência de Mulheres</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      :root{ --terra-1: #7a3f15; --terra-2: #c2773a; --terra-3: #f3d9c6; --terra-4: #f6eadf; }
-      body { background: #fff; color: #2b2b2b; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-      .site-header { background: linear-gradient(90deg,var(--terra-1), var(--terra-2)); color: white; padding: 15px 0; }
-      .site-title { font-size: 1.2rem; display:flex; align-items:center; gap:12px; }
-      .site-title img { height:56px; width:56px; object-fit:contain; border-radius:8px; background:white; padding:6px; }
-      .btn-terra { background: var(--terra-2); color: white; border: none; }
-      .btn-terra:hover { background: var(--terra-1); color: white; }
-      footer { padding: 20px 0; background:#f8f0ea; margin-top:40px; }
-      .qr-img { width:260px; height:260px; border: 2px solid var(--terra-3); border-radius: 10px; padding: 10px; background: white; object-fit:contain; }
-      .event-card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); transition: transform 0.25s; }
-      .event-card:hover { transform: translateY(-6px); }
-      .event-img { height: 240px; object-fit: cover; border-top-left-radius: 10px; border-top-right-radius: 10 page; }
-      .idealizadora-img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin: 0 auto 15px; border: 4px solid var(--terra-3); }
-      .pix-info { background: var(--terra-4); padding: 15px; border-radius: 8px; margin: 15px 0; }
-      .pix-key { font-family: monospace; background: white; padding: 8px; border-radius: 4px; word-break: break-all; }
-      .nav-link { color: white !important; font-weight: 500; }
-      .nav-link:hover { color: var(--terra-3) !important; }
-      .quem-somos-text { font-size: 1.2rem; line-height: 1.6; }
+        :root{ --terra-1: #7a3f15; --terra-2: #c2773a; --terra-3: #f3d9c6; --terra-4: #f6eadf; }
+        body { background: #fff; color: #2b2b2b; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .site-header { background: linear-gradient(90deg,var(--terra-1), var(--terra-2)); color: white; padding: 15px 0; }
+        .site-title { font-size: 1.2rem; display:flex; align-items:center; gap:12px; }
+        .site-title img { height:56px; width:56px; object-fit:contain; border-radius:8px; background:white; padding:6px; }
+        .btn-terra { background: var(--terra-2); color: white; border: none; }
+        .btn-terra:hover { background: var(--terra-1); color: white; }
+        footer { padding: 20px 0; background:#f8f0ea; margin-top:40px; }
+        .qr-img { width:260px; height:260px; border: 2px solid var(--terra-3); border-radius: 10px; padding: 10px; background: white; object-fit:contain; }
+        .event-card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); transition: transform 0.25s; }
+        .event-card:hover { transform: translateY(-6px); }
+        .event-img { height: 240px; object-fit: cover; border-top-left-radius: 10px; border-top-right-radius: 10px; }
+        .idealizadora-img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin: 0 auto 15px; border: 4px solid var(--terra-3); }
+        .pix-info { background: var(--terra-4); padding: 15px; border-radius: 8px; margin: 15px 0; }
+        .pix-key { font-family: monospace; background: white; padding: 8px; border-radius: 4px; word-break: break-all; }
+        .nav-link { color: white !important; font-weight: 500; }
+        .nav-link:hover { color: var(--terra-3) !important; }
+        .quem-somos-text { font-size: 1.2rem; line-height: 1.6; }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <header class="site-header">
-      <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="site-title">
-            <img src=\"""" + BORBOLETA_URL + """\" alt="Borboleta" />
-            <div>
-              <div style="font-weight:700; font-size:1.1rem">Conferência de Mulheres</div>
-              <small>Mulheres Transformadas</small>
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="site-title">
+                    <img src="{{ url_for('static', filename='images/borboleta.png') }}" alt="Borboleta" />
+                    <div>
+                        <div style="font-weight:700; font-size:1.1rem">Conferência de Mulheres</div>
+                        <small>Mulheres Transformadas</small>
+                    </div>
+                </div>
+
+                <button class="navbar-toggler d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <nav class="d-none d-md-flex align-items-center">
+                    <a class="nav-link mx-2" href="{{ url_for('index') }}">Inicial</a>
+                    <a class="nav-link mx-2" href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a class="nav-link mx-2" href="{{ url_for('eventos') }}">Eventos</a>
+                    <a class="nav-link mx-2" href="{{ url_for('inscricao') }}">Inscrição</a>
+                    <a class="nav-link mx-2" href="{{ url_for('contato') }}">Contato</a>
+                    <a class="nav-link mx-2" href="{{ url_for('admin_login') }}">Área Admin</a>
+                </nav>
             </div>
-          </div>
 
-          <button class="navbar-toggler d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <i class="fas fa-bars"></i>
-          </button>
-
-          <nav class="d-none d-md-flex align-items-center">
-            <a class="nav-link mx-2" href="{{ url_for('index') }}">Inicial</a>
-            <a class="nav-link mx-2" href="{{ url_for('quem_somos') }}">Quem Somos</a>
-            <a class="nav-link mx-2" href="{{ url_for('eventos') }}">Eventos</a>
-            <a class="nav-link mx-2" href="{{ url_for('inscricao') }}">Inscrição</a>
-            <a class="nav-link mx-2" href="{{ url_for('contato') }}">Contato</a>
-            <a class="nav-link mx-2" href="{{ url_for('admin_login') }}">Área do Administrador</a>
-          </nav>
+            <div class="collapse d-md-none mt-3" id="navbarNav">
+                <div class="d-flex flex-column">
+                    <a class="nav-link py-2" href="{{ url_for('index') }}">Inicial</a>
+                    <a class="nav-link py-2" href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a class="nav-link py-2" href="{{ url_for('eventos') }}">Eventos</a>
+                    <a class="nav-link py-2" href="{{ url_for('inscricao') }}">Inscrição</a>
+                    <a class="nav-link py-2" href="{{ url_for('contato') }}">Contato</a>
+                    <a class="nav-link py-2" href="{{ url_for('admin_login') }}">Área Admin</a>
+                </div>
+            </div>
         </div>
-
-        <div class="collapse d-md-none mt-3" id="navbarNav">
-          <div class="d-flex flex-column">
-            <a class="nav-link py-2" href="{{ url_for('index') }}">Inicial</a>
-            <a class="nav-link py-2" href="{{ url_for('quem_somos') }}">Quem Somos</a>
-            <a class="nav-link py-2" href="{{ url_for('eventos') }}">Eventos</a>
-            <a class="nav-link py-2" href="{{ url_for('inscricao') }}">Inscrição</a>
-            <a class="nav-link py-2" href="{{ url_for('contato') }}">Contato</a>
-            <a class="nav-link py-2" href="{{ url_for('admin_login') }}">Área do Administrador</a>
-          </div>
-        </div>
-      </div>
     </header>
 
     <main class="container my-4">
-      {{ content|safe }}
+        {{ content|safe }}
     </main>
 
     <footer>
-      <div class="container d-flex justify-content-between align-items-center">
-        <div>
-          <strong>Conferência de Mulheres</strong><br>
-          <small>Direitos reservados</small>
+        <div class="container d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Conferência de Mulheres</strong><br>
+                <small>Direitos reservados</small>
+            </div>
+            <div>
+                <a class="social-btn" href="https://wa.me/55""" + WHATSAPP_NUMBER + """" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+                <a class="social-btn" href="https://www.instagram.com/transformadas.25" target="_blank">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
         </div>
-        <div>
-          <a class="social-btn" href="https://wa.me/55{{ whatsapp_number }}" target="_blank">
-            <i class="fab fa-whatsapp"></i>
-          </a>
-          <a class="social-btn" href="https://www.instagram.com/transformadas.25" target="_blank">
-            <i class="fab fa-instagram"></i>
-          </a>
-        </div>
-      </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {{ scripts|safe }}
-  </body>
+</body>
 </html>
 """
 
@@ -279,135 +279,137 @@ def render_index_content():
 # ---------------- Pages (Quem somos, Contato, Inscrição, Eventos list) ----------------
 def get_quem_content():
     return """
-  <h2 class="mb-4" style="color:var(--terra-1)">Quem Somos</h2>
-  <div class="row">
-    <div class="col-md-6">
-      <p class="quem-somos-text">Somos um grupo de mulheres cristãs que desejam compartilhar o amor de Deus e fortalecer a comunidade feminina na fé.</p>
-      <p class="quem-somos-text">Nosso evento foi idealizado para proporcionar um momento de renovação e transformação através da Palavra de Deus, com workshops, palestras e momentos de adoração.</p>
-      
-      <div class="mt-4">
-        <h3 style="color:var(--terra-2)">Siga-nos no Instagram</h3>
-        <a href="https://www.instagram.com/transformadas.25/#" target="_blank" class="btn btn-terra">
-          <i class="fab fa-instagram me-2"></i> @transformadas.25
-        </a>
-      </div>
+    <h2 class="mb-4" style="color:var(--terra-1)">Quem Somos</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <p class="quem-somos-text">Somos um grupo de mulheres cristãs que desejam compartilhar o amor de Deus e fortalecer a comunidade feminina na fé.</p>
+            <p class="quem-somos-text">Nosso evento foi idealizado para proporcionar um momento de renovação e transformação através da Palavra de Deus, com workshops, palestras e momentos de adoração.</p>
+            
+            <div class="mt-4">
+                <h3 style="color:var(--terra-2)">Siga-nos no Instagram</h3>
+                <a href="https://www.instagram.com/transformadas.25" target="_blank" class="btn btn-terra">
+                    <i class="fab fa-instagram me-2"></i> @transformadas.25
+                </a>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <img src="{{ url_for('static', filename='images/Logo Quem Somos.jpg') }}" class="img-fluid rounded" alt="Quem Somos">
+        </div>
     </div>
-    <div class="col-md-6">
-      <img src=\"""" + QUEM_SOMOS_LOGO + """\" class="img-fluid rounded" alt="Quem Somos">
-    </div>
-  </div>
-"""
+    """
 
 def get_contato_content():
     return """
-  <h2 class="mb-4" style="color:var(--terra-1)">Contato</h2>
+    <h2 class="mb-4" style="color:var(--terra-1)">Contato</h2>
 
-  <div class="row">
-    <div class="col-md-6">
-      <div class="card p-3">
-        <div class="card-body">
-          <h5 class="card-title" style="color:var(--terra-2)">Entre em Contato</h5>
-          <p><i class="fab fa-whatsapp me-2"></i> WhatsApp: +55 81 8564-1262</p>
-          <p><i class="fab fa-instagram me-2"></i> Instagram: <a href="https://www.instagram.com/transformadas.25" target="_blank">@transformadas.25</a></p>
-          <div class="mt-4">
-            <a href="https://wa.me/55""" + WHATSAPP_NUMBER + """" class="btn btn-terra me-2" target="_blank"><i class="fab fa-whatsapp me-1"></i> Enviar Mensagem</a>
-            <a href="https://www.instagram.com/transformadas.25" class="btn btn-terra" target="_blank"><i class="fab fa-instagram me-1"></i> Seguir no Instagram</a>
-          </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card p-3">
+                <div class="card-body">
+                    <h5 class="card-title" style="color:var(--terra-2)">Entre em Contato</h5>
+                    <p><i class="fab fa-whatsapp me-2"></i> WhatsApp: +55 81 8564-1262</p>
+                    <p><i class="fab fa-instagram me-2"></i> Instagram: <a href="https://www.instagram.com/transformadas.25" target="_blank">@transformadas.25</a></p>
+                    <div class="mt-4">
+                        <a href="https://wa.me/55""" + WHATSAPP_NUMBER + """" class="btn btn-terra me-2" target="_blank"><i class="fab fa-whatsapp me-1"></i> Enviar Mensagem</a>
+                        <a href="https://www.instagram.com/transformadas.25" class="btn btn-terra" target="_blank"><i class="fab fa-instagram me-1"></i> Seguir no Instagram</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5>Site Desenvolvido por TM Code</h5>
+                    <p>Contatos do WhatsApp: 
+                        <a href="https://wa.me/5581995143900" target="_blank">(81) 99514-3900</a> | 
+                        <a href="https://wa.me/5581987734133" target="_blank">(81) 98773-4133</a>
+                    </p>
+                    <div class="mt-3">
+                        <img src="{{ url_for('static', filename='images/logo.jpeg') }}" style="height: 70px;" alt="Logo TM Code" />
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <div class="card mt-3">
-        <div class="card-body">
-          <h5>Site Desenvolvido por TM Code</h5>
-          <p>Contatos do WhatsApp: (81) 99514-3900  |  (81) 98773-4133</p>
-          <div class="mt-3">
-            <img src=\"""" + LOGO_URL + """\" style="height: 70px;" alt="Logo TM Code" />
-          </div>
+        <div class="col-md-6">
+            <img src="https://placehold.co/600x400/f6eadf/c2773a?text=Contato" class="img-fluid rounded" alt="Contato">
         </div>
-      </div>
-
     </div>
-
-    <div class="col-md-6">
-      <img src="https://placehold.co/600x400/f6eadf/c2773a?text=Contato" class="img-fluid rounded" alt="Contato">
-    </div>
-  </div>
-"""
+    """
 
 def get_inscricao_content():
     return """
-  <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - Conferência de Mulheres</h2>
+    <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - Conferência de Mulheres</h2>
 
-  <div class="card p-4 mb-4">
-    <div class="mb-4">
-      <h4 style="color:var(--terra-2)">Informações do Evento</h4>
-      <p><strong>Data:</strong> 06/12/2025</p>
-      <p><strong>Horário:</strong> 16hs às 21hs</p>
-      <p><strong>Local:</strong> A definir</p>
+    <div class="card p-4 mb-4">
+        <div class="mb-4">
+            <h4 style="color:var(--terra-2)">Informações do Evento</h4>
+            <p><strong>Data:</strong> 06/12/2025</p>
+            <p><strong>Horário:</strong> 16hs às 21hs</p>
+            <p><strong>Local:</strong> A definir</p>
+        </div>
+
+        <form id="regForm" method="POST" action="{{ url_for('submit_inscricao') }}">
+            <h4 style="color:var(--terra-2)">Dados Pessoais</h4>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nome</label>
+                    <input name="nome" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Sobrenome</label>
+                    <input name="sobrenome" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">CPF</label>
+                    <input name="cpf" class="form-control" required placeholder="000.000.000-00">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Telefone</label>
+                    <input name="telefone" class="form-control" required placeholder="(00) 00000-0000">
+                </div>
+            </div>
+
+            <div class="mb-3 p-3" style="background-color: var(--terra-4); border-radius: 8px;">
+                <strong>Valor da inscrição: R$ """ + PAYMENT_AMOUNT + """</strong>
+            </div>
+
+            <button type="submit" class="btn btn-terra btn-lg">Efetuar pagamento</button>
+        </form>
     </div>
 
-    <form id="regForm" method="POST" action="/submit_inscricao">
-      <h4 style="color:var(--terra-2)">Dados Pessoais</h4>
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Nome</label>
-          <input name="nome" class="form-control" required>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Sobrenome</label>
-          <input name="sobrenome" class="form-control" required>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">CPF</label>
-          <input name="cpf" class="form-control" required placeholder="000.000.000-00">
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Telefone</label>
-          <input name="telefone" class="form-control" required placeholder="(00) 00000-0000">
-        </div>
-      </div>
+    <!-- modal do QR -->
+    <div class="modal fade" id="qrModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-3">
+                <div class="modal-header">
+                    <h5 class="modal-title">Pagamento via PIX</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="pix-info">
+                        <p>Valor a ser pago: <strong>R$ """ + PAYMENT_AMOUNT + """</strong></p>
+                        <p>Chave Pix: <span class="pix-key">""" + PIX_KEY + """</span></p>
+                    </div>
 
-      <div class="mb-3 p-3" style="background-color: var(--terra-4); border-radius: 8px;">
-        <strong>Valor da inscrição: R$ """ + PAYMENT_AMOUNT + """</strong>
-      </div>
+                    <p>Escaneie o QR Code abaixo para realizar o pagamento:</p>
+                    <img id="qrImage" class="qr-img" src="{{ url_for('static', filename='images/qrcode-pix.svg') }}" alt="QR Code Pix">
 
-      <button type="submit" class="btn btn-terra btn-lg">Efetuar pagamento</button>
-    </form>
-  </div>
-
-  <!-- modal do QR -->
-  <div class="modal fade" id="qrModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content p-3">
-        <div class="modal-header">
-          <h5 class="modal-title">Pagamento via PIX</h5>
-          <button class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="mt-3">
+                        <button id="confirmPayBtn" class="btn btn-success">Confirmar pagamento</button>
+                    </div>
+                    
+                    <div class="mt-4 p-3" style="background-color: #f0f8f0; border-radius: 8px;">
+                        <h6>Entre no Grupo do WhatsApp - Transformadas</h6>
+                        <p>Após confirmar o pagamento, entre no nosso grupo para receber todas as informações:</p>
+                        <a href="https://chat.whatsapp.com/ICWsAlDkaFZ7vmcZme0Myr?mode=ems_wa_t" target="_blank" class="btn btn-success">
+                            <i class="fab fa-whatsapp me-2"></i> Entrar no Grupo
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="modal-body text-center">
-          <div class="pix-info">
-            <p>Valor a ser pago: <strong>R$ """ + PAYMENT_AMOUNT + """</strong></p>
-            <p>Chave Pix: <span class="pix-key">""" + PIX_KEY + """</span></p>
-          </div>
-
-          <p>Escaneie o QR Code abaixo para realizar o pagamento:</p>
-          <img id="qrImage" class="qr-img" src=\"""" + QR_URL + """\" alt="QR Code Pix">
-
-          <div class="mt-3">
-            <button id="confirmPayBtn" class="btn btn-success">Confirmar pagamento</button>
-          </div>
-          
-          <div class="mt-4 p-3" style="background-color: #f0f8f0; border-radius: 8px;">
-            <h6>Entre no Grupo do WhatsApp - Transformadas</h6>
-            <p>Após confirmar o pagamento, entre no nosso grupo para receber todas as informações:</p>
-            <a href="https://chat.whatsapp.com/ICWsAlDkaFZ7vmcZme0Myr?mode=ems_wa_t" target="_blank" class="btn btn-success">
-              <i class="fab fa-whatsapp me-2"></i> Entrar no Grupo
-            </a>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
-"""
+    """
 
 inscricao_scripts = """
 <script>
