@@ -1,7 +1,6 @@
 # app.py
 import os
-from flask import url_for
-from flask import Flask, render_template_string, request, redirect, url_for, send_file, jsonify, session, flash, abort
+from flask import Flask, render_template, request, redirect, send_file, jsonify, session, flash, abort, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -25,13 +24,23 @@ PAYMENT_AMOUNT = "5.00"
 WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
-# URLs das imagens
-from flask import url_for
-
+# URLs das imagens (fixas no /static/)
 BORBOLETA_URL = "/static/images/borboleta.png"
 URL_QR = "/static/images/qrcode-pix.svg"
 URL_DO_LOGO = "/static/images/logotipo.jpeg"
 QUEM_SOMOS_LOGO = "/static/images/Quem somos.png"
+
+
+# ---------------- ROTA PRINCIPAL ----------------
+@app.route("/")
+def home():
+    return render_template(
+        "index.html",
+        borboleta=BORBOLETA_URL,
+        qr=URL_QR,
+        logo=URL_DO_LOGO,
+        quem_somos=QUEM_SOMOS_LOGO
+    )
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -1126,6 +1135,7 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
