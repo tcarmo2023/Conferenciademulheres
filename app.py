@@ -26,10 +26,10 @@ WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
 # URLs das imagens
-BORBOLETA_URL = url_for('static', filename='images/borboleta.png')
-LOGO_URL = url_for('static', filename='images/logotipo.jpeg')
-QR_URL = url_for('static', filename='images/qrcode-pix.svg')
-QUEM_SOMOS_LOGO = url_for('static', filename='images/Quem somos.png')
+BORBOLETA_URL = "/images/borboleta.png"
+QR_URL = "/images/qrcode-pix.svg"
+LOGO_URL = "/images/logotipo.jpeg"
+QUEM_SOMOS_LOGO = "/images/Quem somos.png"
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -1124,4 +1124,5 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
 
