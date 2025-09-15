@@ -26,10 +26,10 @@ ADMIN_PASSWORD = "CODE@2025"
 
 # ---------------- IMAGENS ----------------
 # Apenos os caminhos relativos, não use url_for() aqui
-BORBOLETA_PATH = "images/Borboleta.svg"
-QR_PATH = "images/qrcode-pix.svg"
-LOGO_PATH = "images/logo.jpeg"
-QUEM_SOMOS_PATH = "images/Quem somos.png"
+BORBOLETA_PATH = "/static/images/Borboleta.svg"
+QR_PATH = "/static/images/qrcode-pix.svg"
+LOGO_PATH = "/static/images/logo.jpeg"
+QUEM_SOMOS_PATH = "/static/images/Quem somos.png"
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -1183,6 +1183,7 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
