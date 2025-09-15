@@ -6,6 +6,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 from io import BytesIO
 import base64
+from flask import Flask, render_template, url_for
 
 # ---------------- CONFIG ----------------
 app = Flask(__name__)
@@ -25,10 +26,10 @@ WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
 # URLs das imagens
-BORBOLETA_URL = url_for('static', filename='images/Borboleta.svg')
-LOGO_URL = url_for('static', filename='images/logo.jpeg')
-QR_URL = url_for('static', filename='images/qrcode-pix.svg')
-QUEM_SOMOS_LOGO = url_for('static', filename='images/Quem somos.png')
+BORBOLETA_URL = url_for('static', filename='img/Borboleta.svg')
+LOGO_URL = url_for('static', filename='img/logo.jpeg')
+QR_URL = url_for('static', filename='img/qrcode-pix.svg')
+QUEM_SOMOS_LOGO = url_for('static', filename='img/Quem_somos.png')
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -1123,6 +1124,7 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
