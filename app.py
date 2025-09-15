@@ -28,7 +28,7 @@ ADMIN_PASSWORD = "CODE@2025"
 # URLs das imagens
 BORBOLETA_URL = url_for('static', filename='images/borboleta.png')
 QR_URL = url_for('static', filename='images/qrcode-pix.svg')
-LOGO_URL = url_for('static', filename='images/logo.jpeg')
+LOGO_URL = url_for('static', filename='images/logo.jpg')
 QUEM_SOMOS_LOGO = url_for('static', filename='images/Quem somos.png')
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
@@ -1124,3 +1124,4 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
