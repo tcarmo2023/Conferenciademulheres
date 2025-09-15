@@ -24,12 +24,11 @@ PAYMENT_AMOUNT = "5.00"
 WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
-# ---------------- IMAGENS ----------------
-# Apenos os caminhos relativos, não use url_for() aqui
-BORBOLETA_PATH = "/static/images/Borboleta.svg"
-QR_PATH = "/static/images/qrcode-pix.svg"
-LOGO_PATH = "/static/images/logo.jpeg"
-QUEM_SOMOS_PATH = "/static/images/Quem somos.png"
+# URLs das imagens
+BORBOLETA_URL = "/static/images/borboleta.png"
+QR_URL = "/static/images/qrcode-pix.svg"
+LOGO_URL = "/static/images/logo.jpeg"
+QUEM_SOMOS_LOGO = "/static/images/Quem somos.png"
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -1124,15 +1123,3 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
-
-
-
-
-
-
-
-
-
