@@ -506,65 +506,6 @@ print_tpl = """
 """
 
 # ---------------- Routes principais ----------------
-@app.route('/Fotos')
-def index():
-    # Agora você pode usar url_for() dentro das rotas
-    borboleta_url = url_for('static', filename=BORBOLETA_PATH)
-    qr_url = url_for('static', filename=QR_PATH)
-    logo_url = url_for('static', filename=LOGO_PATH)
-    quem_somos_url = url_for('static', filename=QUEM_SOMOS_PATH)
-    
-    # Renderize o template passando as URLs
-    return render_template_string('''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Conferência de Mulheres</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
-            .header { background-color: #6a0dad; color: white; padding: 20px; text-align: center; }
-            .logo { max-width: 200px; margin: 0 auto; display: block; }
-            .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-            .section { background: white; padding: 20px; margin: 20px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-            .button { background-color: #6a0dad; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
-            .payment-info { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 15px 0; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <img src="{{ logo_url }}" alt="Logo" class="logo">
-            <h1>Conferência de Mulheres</h1>
-            <h2>Mulheres Transformadas</h2>
-        </div>
-
-        <div class="container">
-            <div class="section">
-                <h2>Bem-vinda!</h2>
-                <p>Junte-se a nós para um tempo de transformação e renovação espiritual.</p>
-                <a href="/register" class="button">Fazer Inscrição</a>
-            </div>
-
-            <div class="section">
-                <h2>Informações de Pagamento</h2>
-                <div class="payment-info">
-                    <p><strong>Valor:</strong> R$ {{ PAYMENT_AMOUNT }}</p>
-                    <p><strong>Chave PIX:</strong> {{ PIX_KEY }}</p>
-                    <img src="{{ qr_url }}" alt="QR Code PIX" style="max-width: 300px; display: block; margin: 15px auto;">
-                </div>
-            </div>
-
-            <div class="section">
-                <h2>Quem Somos</h2>
-                <img src="{{ quem_somos_url }}" alt="Quem Somos" style="max-width: 100%;">
-            </div>
-        </div>
-
-        <img src="{{ borboleta_url }}" alt="Borboleta" style="position: fixed; bottom: 20px; right: 20px; width: 100px; opacity: 0.7;">
-    </body>
-    </html>
-    ''', borboleta_url=borboleta_url, qr_url=qr_url, logo_url=logo_url, 
-    quem_somos_url=quem_somos_url, PAYMENT_AMOUNT=PAYMENT_AMOUNT, PIX_KEY=PIX_KEY)
-
 @app.route('/')
 def index():
     content = render_index_content()
@@ -1183,6 +1124,7 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
