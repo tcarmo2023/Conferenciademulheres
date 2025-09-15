@@ -1,6 +1,5 @@
-# app.py
 import os
-from flask import Flask, render_template_string, request, redirect, url_for, send_file, jsonify, session, flash, abort
+from flask import Flask, render_template_string, request, redirect, url_for, send_file, jsonify, session, flash, abort, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -24,11 +23,17 @@ PAYMENT_AMOUNT = "5.00"
 WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
+# ---------------- ROTAS PARA ARQUIVOS DE IMAGEM ----------------
+@app.route('/images/<path:filename>')
+def serve_images(filename):
+    return send_from_directory('.', filename)
+
 # URLs das imagens
-BORBOLETA_URL = "/static/images/borboleta.png"
-QR_URL = "/static/images/qrcode-pix.svg"
-LOGO_URL = "/static/images/logo.jpeg"
-QUEM_SOMOS_LOGO = "/static/images/Quem somos.png"
+BORBOLETA_URL = "/images/borboleta.png"
+QR_URL = "/images/qrcode-pix.svg"
+LOGO_URL = "/images/logotipo.jpeg"
+QUEM_SOMOS_LOGO = "/images/Quem somos.png"
+
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
