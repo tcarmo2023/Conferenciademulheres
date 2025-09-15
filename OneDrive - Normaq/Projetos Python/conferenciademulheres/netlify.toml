@@ -1,0 +1,13 @@
+[build]
+  command = "echo 'No build needed'"
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/app"
+  status = 200
+
+[[redirects]]
+  from = "/static/*"
+  to = "/static/:splat"
+  status = 200

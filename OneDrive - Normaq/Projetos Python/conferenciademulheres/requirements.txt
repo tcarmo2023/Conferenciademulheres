@@ -1,0 +1,9 @@
+flask>=2.0
+flask-sqlalchemy
+gunicorn
+python-dotenv
+pandas
+gspread
+google-auth
+google-auth-oauthlib
+werkzeug

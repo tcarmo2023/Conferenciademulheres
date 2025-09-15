@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: conferencia-mulheres
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: FLASK_SECRET_KEY
+        value: 672b26f72aa2a21bbf6ba696aaf787a89554c4342e2991aaaf968a9f7be62a40
