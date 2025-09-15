@@ -25,10 +25,10 @@ WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
 # URLs das imagens
-BORBOLETA_URL = "https://drive.google.com/thumbnail?id=1aBIJ5EGjtGoSbv7FRemGqYw4EdUVSOTv&sz=w1000"
-QR_URL = "https://drive.google.com/thumbnail?id=176dppZJu4VmrC7Lyn-T1CHaR-mXz9R_P&sz=w1000"
-LOGO_URL = "https://drive.google.com/thumbnail?id=1Fbt-Ln925C5vjzqvK5DyO9Wk_0RxqD58&sz=w1000"
-QUEM_SOMOS_LOGO = "https://drive.google.com/thumbnail?id=17p-tTLkjNBYexn9Gy0CkW7WLWvdLnsCN&sz=w1000"
+BORBOLETA_URL = "/static/images/borboleta.png"
+QR_URL = "/static/images/qrcode-pix.svg"
+LOGO_URL = "/static/images/logo.jpeg"
+QUEM_SOMOS_LOGO = "/static/images/Quem somos.png"
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
