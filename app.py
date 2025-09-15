@@ -28,10 +28,10 @@ ADMIN_PASSWORD = "CODE@2025"
 # URLs das imagens
 from flask import url_for
 
-BORBOLETA_URL = url_for('static', filename='images/borboleta.png')
-URL_QR = url_for('static', filename='images/qrcode-pix.svg')
-URL_DO_LOGO = url_for('static', filename='images/logotipo.jpeg')
-QUEM_SOMOS_LOGO = url_for('static', filename='images/Quem somos.png')
+BORBOLETA_URL = "/static/images/borboleta.png"
+URL_QR = "/static/images/qrcode-pix.svg"
+URL_DO_LOGO = "/static/images/logotipo.jpeg"
+QUEM_SOMOS_LOGO = "/static/images/Quem somos.png"
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -1126,6 +1126,7 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
