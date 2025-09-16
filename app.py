@@ -24,11 +24,12 @@ PAYMENT_AMOUNT = "5.00"
 WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
-# URLs das imagens usando caminhos absolutos
-BORBOLETA_URL = "https://drive.google.com/file/d/1p9rS_hGZ6I-SnOR3XMStmjyTBqIYfsXa/view?usp=drive_link"
-QR_URL = "https://drive.google.com/file/d/1kXb1tDY_4nN9XQhhZii8gnIHRXxOOaJn/view?usp=drive_link"
-LOGO_URL = "https://drive.google.com/file/d/1Lg4ZRnhC2OEORNhKu9TDTR_Si0bxXFdu/view?usp=drive_link"
-QUEM_SOMOS_LOGO = "https://drive.google.com/file/d/1Nzhx0mzumUIHe5n_NM6MSz0LqPd50uAl/view?usp=drive_link"
+# URLs das imagens usando links diretos do Google Drive
+# Convertendo os links de visualização para links diretos de download
+BORBOLETA_URL = "https://drive.google.com/uc?export=view&id=1p9rS_hGZ6I-SnOR3XMStmjyTBqIYfsXa"
+QR_URL = "https://drive.google.com/uc?export=view&id=1kXb1tDY_4nN9XQhhZii8gnIHRXxOOaJn"
+LOGO_URL = "https://drive.google.com/uc?export=view&id=1Lg4ZRnhC2OEORNhKu9TDTR_Si0bxXFdu"
+QUEM_SOMOS_LOGO = "https://drive.google.com/uc?export=view&id=1Nzhx0mzumUIHe5n_NM6MSz0LqPd50uAl"
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -283,7 +284,7 @@ def get_quem_content():
   <h2 class="mb-4" style="color:var(--terra-1)">Quem Somos</h2>
   <div class="row">
     <div class="col-md-6">
-      <p class="quem-somos-text">Somos um grupo de mulheres cristãs que desejam compartilhar o amor de Deus and fortalecer a comunidade feminina na fé.</p>
+      <p class="quem-somos-text">Somos um grupo de mulheres cristãs que desejam compartilhar o amor de Deus e fortalecer a comunidade feminina na fé.</p>
       <p class="quem-somos-text">Nosso evento foi idealizado para proporcionar um momento de renovação e transformação através da Palavra de Deus, com workshops, palestras e momentos de adoração.</p>
       
       <div class="mt-4">
@@ -399,7 +400,7 @@ def get_inscricao_content():
           
           <div class="mt-4 p-3" style="background-color: #f0f8f0; border-radius: 8px;">
             <h6>Entre no Grupo do WhatsApp - Transformadas</h6>
-            <p>Após confirmar o pagamento, entre no nosso grupo para receber todas as informações:</p>
+            <p>Após confirmar the pagamento, entre no nosso grupo para receber todas as informações:</p>
             <a href="https://chat.whatsapp.com/ICWsAlDkaFZ7vmcZme0Myr?mode=ems_wa_t" target="_blank" class="btn btn-success">
               <i class="fab fa-whatsapp me-2"></i> Entrar no Grupo
             </a>
@@ -439,7 +440,7 @@ inscricao_scripts = """
             alert("Erro ao confirmar pagamento.");
           }
         })
-        .catch(e => { console.error(e); alert("Erro de rede."); });
+        .catch(e => { console.error(e; alert("Erro de rede."); });
       };
     }
   });
@@ -898,7 +899,7 @@ def admin_novo_workshop():
           <div class="mb-2"><label>Título</label><input name="titulo" class="form-control" required></div>
           <div class="mb-2"><label>Data</label><input name="data" class="form-control"></div>
           <div class="mb-2"><label>Horário</label><input name="horario" class="form-control"></div>
-          <div class="mb-2"><label>Local</label><input name="local" class="form-control"></div>
+         <div class="mb-2"><label>Local</label><input name="local" class="form-control"></div>
           <div class="mb-2"><label>Abordagem</label><textarea name="abordagem" class="form-control"></textarea></div>
           <button class="btn btn-terra">Criar Workshop</button>
         </form>
@@ -1124,5 +1125,3 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
-
-
