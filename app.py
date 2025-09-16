@@ -25,10 +25,7 @@ WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
 # URLs das imagens usando url_for para garantir caminhos corretos
-BORBOLETA_URL = url_for('static', filename='images/borboleta.png')
-QR_URL = url_for('static', filename='images/qrcode-pix.svg')
-LOGO_URL = url_for('static', filename='images/logo.jpeg')
-QUEM_SOMOS_LOGO = url_for('static', filename='images/Logo Quem Somos.jpg')
+# Estas serão definidas dentro das rotas para garantir o contexto do app
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -69,6 +66,7 @@ class Workshop(db.Model):
     status = db.Column(db.String(20), default="Em Breve")  # Em Breve / Aberto
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# Criar tabelas dentro do contexto da aplicação
 with app.app_context():
     db.create_all()
 
@@ -86,7 +84,14 @@ def save_uploaded_file(file_storage):
     return unique_name
 
 # ---------------- Base template (usa URLs diretas) ----------------
-base_css_js = """
+def get_base_css_js():
+    # URLs das imagens usando url_for para garantir caminhos corretos
+    borboleta_url = url_for('static', filename='images/borboleta.png')
+    qr_url = url_for('static', filename='images/qrcode-pix.svg')
+    logo_url = url_for('static', filename='images/logo.jpeg')
+    quem_somos_logo = url_for('static', filename='images/Logo Quem Somos.jpg')
+    
+    return """
 <!doctype html>
 <html lang="pt-br">
   <head>
@@ -121,7 +126,7 @@ base_css_js = """
       <div class="container">
         <div class="d-flex justify-content-between align-items-center">
           <div class="site-title">
-            <img src=\"""" + BORBOLETA_URL + """\" alt="Borboleta" />
+            <img src=\"""" + borboleta_url + """\" alt="Borboleta" />
             <div>
               <div style="font-weight:700; font-size:1.1rem">Conferência de Mulheres</div>
               <small>Mulheres Transformadas</small>
@@ -278,6 +283,7 @@ def render_index_content():
 
 # ---------------- Pages (Quem somos, Contato, Inscrição, Eventos list) ----------------
 def get_quem_content():
+    quem_somos_logo = url_for('static', filename='images/Logo Quem Somos.jpg')
     return """
   <h2 class="mb-4" style="color:var(--terra-1)">Quem Somos</h2>
   <div class="row">
@@ -293,12 +299,13 @@ def get_quem_content():
       </div>
     </div>
     <div class="col-md-6">
-      <img src=\"""" + QUEM_SOMOS_LOGO + """\" class="img-fluid rounded" alt="Quem Somos">
+      <img src=\"""" + quem_somos_logo + """\" class="img-fluid rounded" alt="Quem Somos">
     </div>
   </div>
 """
 
 def get_contato_content():
+    logo_url = url_for('static', filename='images/logo.jpeg')
     return """
   <h2 class="mb-4" style="color:var(--terra-1)">Contato</h2>
 
@@ -321,7 +328,7 @@ def get_contato_content():
           <h5>Site Desenvolvido por TM Code</h5>
           <p>Contatos do WhatsApp: (81) 99514-3900  |  (81) 98773-4133</p>
           <div class="mt-3">
-            <img src=\"""" + LOGO_URL + """\" style="height: 70px;" alt="Logo TM Code" />
+            <img src=\"""" + logo_url + """\" style="height: 70px;" alt="Logo TM Code" />
           </div>
         </div>
       </div>
@@ -335,6 +342,7 @@ def get_contato_content():
 """
 
 def get_inscricao_content():
+    qr_url = url_for('static', filename='images/qrcode-pix.svg')
     return """
   <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - Conferência de Mulheres</h2>
 
@@ -390,7 +398,7 @@ def get_inscricao_content():
           </div>
 
           <p>Escaneie o QR Code abaixo para realizar o pagamento:</p>
-          <img id="qrImage" class="qr-img" src=\"""" + QR_URL + """\" alt="QR Code Pix">
+          <img id="qrImage" class="qr-img" src=\"""" + qr_url + """\" alt="QR Code Pix">
 
           <div class="mt-3">
             <button id="confirmPayBtn" class="btn btn-success">Confirmar pagamento</button>
@@ -445,7 +453,9 @@ inscricao_scripts = """
 </script>
 """
 
-print_tpl = """
+def get_print_tpl():
+    qr_url = url_for('static', filename='images/qrcode-pix.svg')
+    return """
 <!doctype html>
 <html lang="pt-br">
 <head>
@@ -479,7 +489,7 @@ print_tpl = """
     </div>
 
     <div style="display:flex;gap:20px;align-items:center;margin-top:12px;">
-      <img src=\"""" + QR_URL + """\" class="qr" alt="QR Code Pix">
+      <img src=\"""" + qr_url + """\" class="qr" alt="QR Code Pix">
       <div>
         <div style="font-weight:700">Pagamento de Inscrição Realizada</div>
         <div class="instructions">
@@ -508,14 +518,14 @@ print_tpl = """
 @app.route('/')
 def index():
     content = render_index_content()
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
 @app.route('/quem-somos')
 def quem_somos():
     content = get_quem_content()
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -541,21 +551,21 @@ def eventos():
             </div>
             """
     content += "</div>"
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
 @app.route('/contato')
 def contato():
     content = get_contato_content()
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
 @app.route('/inscricao')
 def inscricao():
     content = get_inscricao_content()
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts=inscricao_scripts)
 
@@ -586,7 +596,7 @@ def confirm_payment():
 @app.route('/print_confirmation/<int:reg_id>')
 def print_confirmation(reg_id):
     reg = Registration.query.get_or_404(reg_id)
-    return render_template_string(print_tpl,
+    return render_template_string(get_print_tpl(),
                                   reg=reg,
                                   payment_amount=PAYMENT_AMOUNT,
                                   pix_key=PIX_KEY,
@@ -628,7 +638,7 @@ def ver_evento(evento_id):
             </div>
             """
     gallery_html += "</div>"
-    return render_template_string(base_css_js.replace("{{ content|safe }}", gallery_html),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", gallery_html),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -643,7 +653,7 @@ def ver_workshop(workshop_id):
       <h4>Abordagem</h4>
       <p>""" + (wk.abordagem or 'Em breve') + """</p>
     """
-    return render_template_string(base_css_js.replace("{{ content|safe }}", html),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", html),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -677,7 +687,7 @@ def admin_login():
         </form>
       </div>
     """
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -757,7 +767,7 @@ def admin_dashboard():
             </div>
             """
     content += "</div>"
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -792,7 +802,7 @@ def admin_novo_evento():
         </form>
       </div>
     """
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -818,7 +828,7 @@ def admin_ajuste_evento():
             </div>
             """
         content += "</div>"
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -868,7 +878,7 @@ def admin_ajuste_evento_closing(evento_id):
         </form>
       </div>
     """
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -903,7 +913,7 @@ def admin_novo_workshop():
         </form>
       </div>
     """
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -957,7 +967,7 @@ def admin_excluir():
                 <h5>""" + evento.titulo + """</h5>
                 <p><strong>Status:</strong> """ + evento.status + """</p>
                 <p><strong>Data:</strong> """ + (evento.data or 'Não definida') + """</p>
-                <form method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.');">
+                <form method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este evento? Esta ação não pode be desfeita.');">
                   <input type="hidden" name="tipo" value="evento">
                   <input type="hidden" name="id" value=\"""" + str(evento.id) + """\">
                   <button type="submit" class="btn btn-danger">Excluir Evento</button>
@@ -996,7 +1006,7 @@ def admin_excluir():
       </div>
     """
     
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -1052,7 +1062,7 @@ def admin_participantes():
       </div>
     """
     
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
@@ -1116,7 +1126,7 @@ def admin_editar_workshop(workshop_id):
         </form>
       </div>
     """
-    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+    return render_template_string(get_base_css_js().replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
