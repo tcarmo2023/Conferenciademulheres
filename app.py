@@ -26,7 +26,7 @@ ADMIN_PASSWORD = "CODE@2025"
 
 # URLs das imagens - usando links diretos do GitHub RAW
 BORBOLETA_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/borboleta.png"
-QR_URL = "https://placehold.co/260x260/f6eadf/c2773a?text=QR+Code"  # Mantendo placeholder para o QR code
+QR_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/6ab4d0aa7a0374a5547d29670bc26777a3c4add2/qrcode-pix.svg"
 LOGO_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/logo.jpeg"
 QUEM_SOMOS_LOGO = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/Quem%20somos.png"
 
@@ -1125,4 +1125,5 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
 
