@@ -24,11 +24,11 @@ PAYMENT_AMOUNT = "5.00"
 WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
-# URLs das imagens - usando placeholders temporários
-BORBOLETA_URL = "https://placehold.co/56x56/f6eadf/c2773a?text=Logo"
-QR_URL = "https://placehold.co/260x260/f6eadf/c2773a?text=QR+Code"
-LOGO_URL = "https://placehold.co/70x70/f6eadf/c2773a?text=TM+Code"
-QUEM_SOMOS_LOGO = "https://placehold.co/600x400/f6eadf/c2773a?text=Quem+Somos"
+# URLs das imagens - usando links diretos do GitHub RAW
+BORBOLETA_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/borboleta.png"
+QR_URL = "https://placehold.co/260x260/f6eadf/c2773a?text=QR+Code"  # Mantendo placeholder para o QR code
+LOGO_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/logo.jpeg"
+QUEM_SOMOS_LOGO = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/Quem%20somos.png"
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -1125,3 +1125,4 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
+
