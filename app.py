@@ -20,13 +20,13 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 db = SQLAlchemy(app)
 
 PIX_KEY = "6d51bb56-3bee-45b1-a26c-2b04c1a6718b"
-PAYMENT_AMOUNT = "5.00"
+PAYMENT_AMOUNT = "10.00"  # Alterado de 5.00 para 10.00
 WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
 # URLs das imagens - usando links diretos do GitHub RAW
 BORBOLETA_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/borboleta.png"
-QR_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/6ab4d0aa7a0374a5547d29670bc26777a3c4add2/qrcode-pix.svg"
+QR_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/36cff8dc117444dcffcecd9593ddcb40be84052b/qrcode-pix_10.png"  # QR Code atualizado
 LOGO_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/logo.jpeg"
 QUEM_SOMOS_LOGO = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/Quem%20somos.png"
 
@@ -47,6 +47,7 @@ class Evento(db.Model):
     horario = db.Column(db.String(50))
     local = db.Column(db.String(200))
     descricao = db.Column(db.Text)
+    valor_inscricao = db.Column(db.String(20), default="10.00")  # Novo campo para valor da inscrição
     status = db.Column(db.String(20), default="Aberto")  # Aberto / Fechado
     agradecimento = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -125,7 +126,7 @@ base_css_js = """
             <img src=\"""" + BORBOLETA_URL + """\" alt="Borboleta" />
             <div>
               <div style="font-weight:700; font-size:1.1rem">Conferência de Mulheres</div>
-              <small>Mulheres Transformadas</small>
+              <small>Essência que Transforma</small>
             </div>
           </div>
 
@@ -170,7 +171,7 @@ base_css_js = """
           <a class="social-btn" href="https://wa.me/55{{ whatsapp_number }}" target="_blank">
             <i class="fab fa-whatsapp"></i>
           </a>
-          <a class="social-btn" href="https://www.instagram.com/transformadas.porcristo?igsh=MXBtMmgzZTJhaWdscQ==" target="_blank">
+          <a class="social-btn" href="https://www.instagram.com/renovadas0.25?igsh=MXQ3dWxkNnQ2enQ2aQ%3D%3D&utm_source=qr" target="_blank">
             <i class="fab fa-instagram"></i>
           </a>
         </div>
@@ -220,7 +221,7 @@ def render_index_content():
               <img src=\"""" + cover + """\" class="event-img" alt="Evento 2025">
               <div class="card-body text-center">
                 <h2 style="color:var(--terra-2)">Evento 2025</h2>
-                <p>Mulheres Transformadas<br>Próximo encontro — aguarde mais informações.</p>
+                <p>Essência que Transforma<br>Próximo encontro — aguarde mais informações.</p>
                 <a class="btn btn-terra" href=\"/evento/""" + str(last_event.id) + """\">Ver</a>
                 """ + ("<a class='btn btn-terra ms-2' href='/inscricao'>Inscrever-se</a>" if last_event.status == 'Aberto' else "") + """
               </div>
@@ -235,7 +236,7 @@ def render_index_content():
               <img src="https://placehold.co/800x600/f6eadf/c2773a?text=Evento+2025" class="event-img" alt="Evento 2025">
               <div class="card-body text-center">
                 <h2 style="color:var(--terra-2)">Evento 2025</h2>
-                <p>Mulheres Transformadas<br>Próximo encontro — aguarde mais informações.</p>
+                <p>Essência que Transforma<br>Próximo encontro — aguarde mais informações.</p>
                 <a class="btn btn-terra" href="#">Ver</a>
               </div>
             </div>
@@ -288,8 +289,8 @@ def get_quem_content():
       
       <div class="mt-4">
         <h3 style="color:var(--terra-2)">Siga-nos no Instagram</h3>
-        <a href="https://www.instagram.com/transformadas.porcristo?igsh=MXBtMmgzZTJhaWdscQ==" target="_blank" class="btn btn-terra">
-          <i class="fab fa-instagram me-2"></i> @transformadas.porcristo
+        <a href="https://www.instagram.com/renovadas0.25?igsh=MXQ3dWxkNnQ2enQ2aQ%3D%3D&utm_source=qr" target="_blank" class="btn btn-terra">
+          <i class="fab fa-instagram me-2"></i> @renovadas0.25
         </a>
       </div>
     </div>
@@ -309,10 +310,10 @@ def get_contato_content():
         <div class="card-body">
           <h5 class="card-title" style="color:var(--terra-2)">Entre em Contato</h5>
           <p><i class="fab fa-whatsapp me-2"></i> WhatsApp: +55 81 8564-1262</p>
-          <p><i class="fab fa-instagram me-2"></i> Instagram: <a href="https://www.instagram.com/transformadas.porcristo?igsh=MXBtMmgzZTJhaWdscQ==" target="_blank">@transformadas.porcristo</a></p>
+          <p><i class="fab fa-instagram me-2"></i> Instagram: <a href="https://www.instagram.com/renovadas0.25?igsh=MXQ3dWxkNnQ2enQ2aQ%3D%3D&utm_source=qr" target="_blank">@renovadas0.25</a></p>
           <div class="mt-4">
             <a href="https://wa.me/55""" + WHATSAPP_NUMBER + """" class="btn btn-terra me-2" target="_blank"><i class="fab fa-whatsapp me-1"></i> Enviar Mensagem</a>
-            <a href="https://www.instagram.com/transformadas.porcristo?igsh=MXBtMmgzZTJhaWdscQ==" class="btn btn-terra" target="_blank"><i class="fab fa-instagram me-1"></i> Seguir no Instagram</a>
+            <a href="https://www.instagram.com/renovadas0.25?igsh=MXQ3dWxkNnQ2enQ2aQ%3D%3D&utm_source=qr" class="btn btn-terra" target="_blank"><i class="fab fa-instagram me-1"></i> Seguir no Instagram</a>
           </div>
         </div>
       </div>
@@ -336,6 +337,12 @@ def get_contato_content():
 """
 
 def get_inscricao_content():
+    # Pega o último evento aberto para mostrar o valor correto
+    last_event = Evento.query.filter_by(status='Aberto').order_by(Evento.created_at.desc()).first()
+    valor_inscricao = PAYMENT_AMOUNT  # Valor padrão
+    if last_event and last_event.valor_inscricao:
+        valor_inscricao = last_event.valor_inscricao
+    
     return """
   <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - Conferência de Mulheres</h2>
 
@@ -369,7 +376,7 @@ def get_inscricao_content():
       </div>
 
       <div class="mb-3 p-3" style="background-color: var(--terra-4); border-radius: 8px;">
-        <strong>Valor da inscrição: R$ """ + PAYMENT_AMOUNT + """</strong>
+        <strong>Valor da inscrição: R$ """ + valor_inscricao + """</strong>
       </div>
 
       <button type="submit" class="btn btn-terra btn-lg">Efetuar pagamento</button>
@@ -386,7 +393,7 @@ def get_inscricao_content():
         </div>
         <div class="modal-body text-center">
           <div class="pix-info">
-            <p>Valor a ser pago: <strong>R$ """ + PAYMENT_AMOUNT + """</strong></p>
+            <p>Valor a ser pago: <strong>R$ """ + valor_inscricao + """</strong></p>
             <p>Chave Pix: <span class="pix-key">""" + PIX_KEY + """</span></p>
           </div>
 
@@ -535,6 +542,7 @@ def eventos():
                 <div class='card-body'>
                   <h5>""" + ev.titulo + """ <small class='text-muted'>(""" + ev.status + """)</small></h5>
                   <p><strong>Data:</strong> """ + (ev.data or '') + """ <strong>Horário:</strong> """ + (ev.horario or '') + """</p>
+                  <p><strong>Valor da inscrição:</strong> R$ """ + (ev.valor_inscricao or PAYMENT_AMOUNT) + """</p>
                   <p>""" + ((ev.descricao or '')[:180]) + """</p>
                   <a class='btn btn-terra' href='/evento/""" + str(ev.id) + """'>Abrir</a>
                 </div>
@@ -587,9 +595,15 @@ def confirm_payment():
 @app.route('/print_confirmation/<int:reg_id>')
 def print_confirmation(reg_id):
     reg = Registration.query.get_or_404(reg_id)
+    # Pega o valor do último evento aberto ou usa o padrão
+    last_event = Evento.query.filter_by(status='Aberto').order_by(Evento.created_at.desc()).first()
+    valor_inscricao = PAYMENT_AMOUNT
+    if last_event and last_event.valor_inscricao:
+        valor_inscricao = last_event.valor_inscricao
+        
     return render_template_string(print_tpl,
                                   reg=reg,
-                                  payment_amount=PAYMENT_AMOUNT,
+                                  payment_amount=valor_inscricao,
                                   pix_key=PIX_KEY,
                                   event_title="Conferência de Mulheres")
 
@@ -602,6 +616,7 @@ def ver_evento(evento_id):
       <h2 style="color:var(--terra-1)">""" + ev.titulo + """ <small class="text-muted">(""" + ev.status + """)</small></h2>
       <p><strong>Data:</strong> """ + (ev.data or '') + """ <strong>Horário:</strong> """ + (ev.horario or '') + """</p>
       <p><strong>Local:</strong> """ + (ev.local or '') + """</p>
+      <p><strong>Valor da inscrição:</strong> R$ """ + (ev.valor_inscricao or PAYMENT_AMOUNT) + """</p>
       <p>""" + (ev.descricao or '') + """</p>
       <hr />
     """
@@ -750,6 +765,7 @@ def admin_dashboard():
               <div class="card p-2">
                 <h5>""" + ev.titulo + """</h5>
                 <p>""" + (ev.data or '') + """ - """ + (ev.horario or '') + """</p>
+                <p><strong>Valor da inscrição:</strong> R$ """ + (ev.valor_inscricao or PAYMENT_AMOUNT) + """</p>
                 <div>
                   <a class="btn btn-sm btn-outline-terra" href=\"/evento/""" + str(ev.id) + """\">Ver</a>
                   <a class="btn btn-sm btn-terra" href=\"/admin/evento/""" + str(ev.id) + """/fechar\">Fechar Evento</a>
@@ -772,10 +788,11 @@ def admin_novo_evento():
         horario = request.form.get('horario', '').strip()
         local = request.form.get('local', '').strip()
         descricao = request.form.get('descricao', '').strip()
+        valor_inscricao = request.form.get('valor_inscricao', '10.00').strip()  # Campo para valor da inscrição
         if not titulo:
             flash("Título obrigatório.", "danger")
             return redirect(url_for('admin_novo_evento'))
-        ev = Evento(titulo=titulo, data=data, horario=horario, local=local, descricao=descricao, status='Aberto')
+        ev = Evento(titulo=titulo, data=data, horario=horario, local=local, descricao=descricao, valor_inscricao=valor_inscricao, status='Aberto')
         db.session.add(ev)
         db.session.commit()
         flash("Evento criado.", "success")
@@ -788,6 +805,7 @@ def admin_novo_evento():
           <div class="mb-2"><label>Data</label><input name="data" class="form-control"></div>
           <div class="mb-2"><label>Horário</label><input name="horario" class="form-control"></div>
           <div class="mb-2"><label>Local</label><input name="local" class="form-control"></div>
+          <div class="mb-2"><label>Valor da Inscrição (R$)</label><input name="valor_inscricao" class="form-control" value="10.00" required></div>
           <div class="mb-2"><label>Descrição</label><textarea name="descricao" class="form-control"></textarea></div>
           <button class="btn btn-terra">Criar Evento</button>
         </form>
@@ -813,6 +831,7 @@ def admin_ajuste_evento():
               <div class='card p-3'>
                 <h5>""" + ev.titulo + """</h5>
                 <p>""" + (ev.data or '') + """ - """ + (ev.horario or '') + """</p>
+                <p><strong>Valor da inscrição:</strong> R$ """ + (ev.valor_inscricao or PAYMENT_AMOUNT) + """</p>
                 <p>""" + ((ev.descricao or '')[:160]) + """</p>
                 <a class='btn btn-terra' href='/admin/evento/""" + str(ev.id) + """/fechar'>Fechar Evento (adicionar fotos/agradecimento)</a>
               </div>
@@ -899,8 +918,7 @@ def admin_novo_workshop():
           <div class="mb-2"><label>Data</label><input name="data" class="form-control"></div>
           <div class="mb-2"><label>Horário</label><input name="horario" class="form-control"></div>
           <div class="mb-2"><label>Local</label><input name="local" class="form-control"></div>
-          <div class="mb-2"><label>Abordagem</label><textarea name="abordagem" class="form
-    <div class="mb-2"><label>Abordagem</label><textarea name="abordagem" class="form-control"></textarea></div>
+          <div class="mb-2"><label>Abordagem</label><textarea name="abordagem" class="form-control"></textarea></div>
           <button class="btn btn-terra">Criar Workshop</button>
         </form>
       </div>
@@ -959,6 +977,7 @@ def admin_excluir():
                 <h5>""" + evento.titulo + """</h5>
                 <p><strong>Status:</strong> """ + evento.status + """</p>
                 <p><strong>Data:</strong> """ + (evento.data or 'Não definida') + """</p>
+                <p><strong>Valor da inscrição:</strong> R$ """ + (evento.valor_inscricao or PAYMENT_AMOUNT) + """</p>
                 <form method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.');">
                   <input type="hidden" name="tipo" value="evento">
                   <input type="hidden" name="id" value=\"""" + str(evento.id) + """\">
@@ -1125,5 +1144,3 @@ def admin_editar_workshop(workshop_id):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     app.run(debug=True)
-
-
