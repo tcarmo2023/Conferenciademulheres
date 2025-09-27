@@ -227,6 +227,10 @@ base_css_js = """
       .animate-fade-in-up {
         animation: fadeInUp 0.6s ease-out;
       }
+      
+      .admin-back-btn {
+        margin-bottom: 20px;
+      }
     </style>
   </head>
   <body>
@@ -253,7 +257,12 @@ base_css_js = """
             <a class="nav-link mx-2" href="{{ url_for('eventos') }}">Eventos</a>
             <a class="nav-link mx-2" href="{{ url_for('inscricao') }}">Inscrição</a>
             <a class="nav-link mx-2" href="{{ url_for('contato') }}">Contato</a>
+            {% if session.admin_logged %}
+            <a class="nav-link mx-2" href="{{ url_for('admin_dashboard') }}">Área do Administrador</a>
+            <a class="nav-link mx-2" href="{{ url_for('admin_logout') }}">Sair</a>
+            {% else %}
             <a class="nav-link mx-2" href="{{ url_for('admin_login') }}">Área do Administrador</a>
+            {% endif %}
           </nav>
         </div>
 
@@ -264,13 +273,25 @@ base_css_js = """
             <a class="nav-link py-2" href="{{ url_for('eventos') }}">Eventos</a>
             <a class="nav-link py-2" href="{{ url_for('inscricao') }}">Inscrição</a>
             <a class="nav-link py-2" href="{{ url_for('contato') }}">Contato</a>
+            {% if session.admin_logged %}
+            <a class="nav-link py-2" href="{{ url_for('admin_dashboard') }}">Área do Administrador</a>
+            <a class="nav-link py-2" href="{{ url_for('admin_logout') }}">Sair</a>
+            {% else %}
             <a class="nav-link py-2" href="{{ url_for('admin_login') }}">Área do Administrador</a>
+            {% endif %}
           </div>
         </div>
       </div>
     </header>
 
     <main class="container my-4">
+      {% if session.admin_logged and request.path.startswith('/admin') %}
+      <div class="admin-back-btn">
+        <a href="/admin" class="btn btn-terra">
+          <i class="fas fa-arrow-left me-2"></i>Voltar para Área do Administrador
+        </a>
+      </div>
+      {% endif %}
       {{ content|safe }}
     </main>
 
@@ -474,7 +495,7 @@ def get_selecao_evento_content(eventos_abertos, eventos_encerrados):
     content = """
     <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - Conferência de Mulheres</h2>
     <div class="card p-4 mb-4">
-      <h4 style="color:var(--terra-2)">Selecione o Evento</h4>
+      <h4 style="color:var(--terra-2)">Selecione o Evento</h5>
       <p>Escolha abaixo o evento para o qual deseja se inscrever:</p>
     """
     
@@ -980,6 +1001,7 @@ def admin_dashboard():
     return render_template_string(base_css_js.replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
+
 # ---------------- Admin: Novo Evento ----------------
 @app.route('/admin/evento/novo', methods=['GET', 'POST'])
 @admin_required
@@ -1450,8 +1472,8 @@ def admin_participantes():
       </div>
       
       <div class="mt-3">
-        <a href="/admin" class="btn btn-secondary">
-          <i class="fas fa-arrow-left me-1"></i> Voltar ao Painel
+        <a href="/admin" class="btn btn-terra">
+          <i class="fas fa-arrow-left me-1"></i> Voltar para Área do Administrador
         </a>
       </div>
     """
