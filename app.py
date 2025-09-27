@@ -111,19 +111,18 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Lista de todas as rotas que precisam de proteção
-ADMIN_ROUTES = [
-    '/admin', '/admin/', '/admin/evento/novo', '/admin/evento/ajuste',
-    '/admin/evento/<int:evento_id>/fechar', '/admin/workshop/novo',
+# Lista de todas as rotas que precisam de proteção (exceto login)
+ADMIN_PROTECTED_ROUTES = [
+    '/admin', '/admin/evento/novo', '/admin/evento/ajuste',
+    '/admin/evento/', '/admin/workshop/novo',
     '/admin/excluir', '/admin/participantes', '/admin/exportar_participantes',
-    '/admin/workshop/<int:workshop_id>/editar'
+    '/admin/workshop/'
 ]
 
 @app.before_request
 def check_admin_access():
-    # Verifica se a rota atual é uma rota administrativa
-    if any(request.path.startswith(route.replace('<int:evento_id>', '').replace('<int:workshop_id>', '')) 
-           for route in ADMIN_ROUTES):
+    # Verifica se a rota atual é uma rota administrativa protegida (exceto login)
+    if any(request.path.startswith(route) for route in ADMIN_PROTECTED_ROUTES):
         if not session.get('admin_logged'):
             return redirect(url_for('admin_login'))
 
@@ -285,7 +284,7 @@ base_css_js = """
     </header>
 
     <main class="container my-4">
-      {% if session.admin_logged and request.path.startswith('/admin') %}
+      {% if session.admin_logged and request.path.startswith('/admin') and not request.path.endswith('/admin/login') %}
       <div class="admin-back-btn">
         <a href="/admin" class="btn btn-terra">
           <i class="fas fa-arrow-left me-2"></i>Voltar para Área do Administrador
