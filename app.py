@@ -20,15 +20,24 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 db = SQLAlchemy(app)
 
 PIX_KEY = "6d51bb56-3bee-45b1-a26c-2b04c1a6718b"
-PAYMENT_AMOUNT = "10.00"  # Alterado de 5.00 para 10.00
+PAYMENT_AMOUNT = "10.00"
 WHATSAPP_NUMBER = "558185641262"
 ADMIN_PASSWORD = "CODE@2025"
 
 # URLs das imagens - usando links diretos do GitHub RAW
-BORBOLETA_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/borboleta.png"
-QR_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/36cff8dc117444dcffcecd9593ddcb40be84052b/qrcode-pix_10.png"  # QR Code atualizado
+BORBOLETA_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/3a7f2a22da1c2bf7d200a69bd484d550d86cb5b8/borboleta.png"
+BORBOLETA_ANIMADA_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/3a7f2a22da1c2bf7d200a69bd484d550d86cb5b8/borboleta.png"
 LOGO_URL = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/logo.jpeg"
 QUEM_SOMOS_LOGO = "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/cb246a297516723bd90b42cc26d432778ad6354e/Quem%20somos.png"
+
+# URLs dos QR Codes PIX
+QR_CODES = {
+    "5.00": "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/3a7f2a22da1c2bf7d200a69bd484d550d86cb5b8/qrcode-pix.svg",
+    "10.00": "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/3a7f2a22da1c2bf7d200a69bd484d550d86cb5b8/qrcode-pix_10.png",
+    "15.00": "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/3a7f2a22da1c2bf7d200a69bd484d550d86cb5b8/qrcode-pix_15.png",
+    "20.00": "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/3a7f2a22da1c2bf7d200a69bd484d550d86cb5b8/qrcode-pix_20.png",
+    "25.00": "https://raw.githubusercontent.com/tcarmo2023/conferenciademulheres/3a7f2a22da1c2bf7d200a69bd484d550d86cb5b8/qrcode-pix_25.png"
+}
 
 # ---------------- Models (Eventos e Workshops separados) ----------------
 class Registration(db.Model):
@@ -37,6 +46,7 @@ class Registration(db.Model):
     sobrenome = db.Column(db.String(120), nullable=False)
     cpf = db.Column(db.String(20), nullable=False)
     telefone = db.Column(db.String(30), nullable=False)
+    evento_id = db.Column(db.Integer, db.ForeignKey('evento.id'))  # Novo campo para associar inscrição ao evento
     paid = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -47,11 +57,12 @@ class Evento(db.Model):
     horario = db.Column(db.String(50))
     local = db.Column(db.String(200))
     descricao = db.Column(db.Text)
-    valor_inscricao = db.Column(db.String(20), default="10.00")  # Novo campo para valor da inscrição
+    valor_inscricao = db.Column(db.String(20), default="10.00")
     status = db.Column(db.String(20), default="Aberto")  # Aberto / Fechado
     agradecimento = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     fotos = db.relationship('FotoEvento', backref='evento', lazy=True, cascade="all,delete-orphan")
+    inscricoes = db.relationship('Registration', backref='evento', lazy=True)
 
 class FotoEvento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -87,6 +98,10 @@ def save_uploaded_file(file_storage):
     file_storage.save(save_path)
     return unique_name
 
+def get_qr_code_url(valor):
+    """Retorna a URL do QR Code baseado no valor da inscrição"""
+    return QR_CODES.get(valor, QR_CODES["10.00"])
+
 # ---------------- Base template (usa URLs diretas) ----------------
 base_css_js = """
 <!doctype html>
@@ -99,26 +114,101 @@ base_css_js = """
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       :root{ --terra-1: #7a3f15; --terra-2: #c2773a; --terra-3: #f3d9c6; --terra-4: #f6eadf; }
-      body { background: #fff; color: #2b2b2b; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+      body { background: #fff; color: #2b2b2b; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; overflow-x: hidden; }
       .site-header { background: linear-gradient(90deg,var(--terra-1), var(--terra-2)); color: white; padding: 15px 0; }
       .site-title { font-size: 1.2rem; display:flex; align-items:center; gap:12px; }
       .site-title img { height:56px; width:56px; object-fit:contain; border-radius:8px; background:white; padding:6px; }
-      .btn-terra { background: var(--terra-2); color: white; border: none; }
-      .btn-terra:hover { background: var(--terra-1); color: white; }
+      .btn-terra { 
+        background: var(--terra-2); 
+        color: white; 
+        border: none; 
+        transition: all 0.3s ease;
+        transform: translateY(0);
+        box-shadow: 0 4px 6px rgba(194, 119, 58, 0.2);
+      }
+      .btn-terra:hover { 
+        background: var(--terra-1); 
+        color: white; 
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(194, 119, 58, 0.3);
+      }
+      .nav-link { 
+        color: white !important; 
+        font-weight: 500; 
+        transition: all 0.3s ease;
+        position: relative;
+        padding: 8px 16px;
+        border-radius: 6px;
+      }
+      .nav-link:hover { 
+        color: var(--terra-3) !important; 
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-2px);
+      }
+      .nav-link::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 0;
+        height: 2px;
+        background: var(--terra-3);
+        transition: all 0.3s ease;
+        transform: translateX(-50%);
+      }
+      .nav-link:hover::after {
+        width: 80%;
+      }
       footer { padding: 20px 0; background:#f8f0ea; margin-top:40px; }
       .qr-img { width:260px; height:260px; border: 2px solid var(--terra-3); border-radius: 10px; padding: 10px; background: white; object-fit:contain; }
-      .event-card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); transition: transform 0.25s; }
-      .event-card:hover { transform: translateY(-6px); }
-      .event-img { height: 240px; object-fit: cover; border-top-left-radius: 10px; border-top-right-radius: 10 page; }
+      .event-card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.08); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+      .event-card:hover { transform: translateY(-8px); box-shadow: 0 8px 16px rgba(0,0,0,0.15); }
+      .event-img { height: 240px; object-fit: cover; border-top-left-radius: 10px; border-top-right-radius: 10px; }
       .idealizadora-img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin: 0 auto 15px; border: 4px solid var(--terra-3); }
       .pix-info { background: var(--terra-4); padding: 15px; border-radius: 8px; margin: 15px 0; }
       .pix-key { font-family: monospace; background: white; padding: 8px; border-radius: 4px; word-break: break-all; }
-      .nav-link { color: white !important; font-weight: 500; }
-      .nav-link:hover { color: var(--terra-3) !important; }
       .quem-somos-text { font-size: 1.2rem; line-height: 1.6; }
+      
+      /* Borboleta animada */
+      .borboleta-flutuante {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 80px;
+        height: 80px;
+        z-index: 1000;
+        animation: flutuar 3s ease-in-out infinite;
+        pointer-events: none;
+      }
+      
+      @keyframes flutuar {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-10px) rotate(5deg); }
+        50% { transform: translateY(-5px) rotate(0deg); }
+        75% { transform: translateY(-10px) rotate(-5deg); }
+      }
+      
+      /* Animações para cards */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .animate-fade-in-up {
+        animation: fadeInUp 0.6s ease-out;
+      }
     </style>
   </head>
   <body>
+    <!-- Borboleta animada -->
+    <img src=\"""" + BORBOLETA_ANIMADA_URL + """\" class="borboleta-flutuante" alt="Borboleta">
+    
     <header class="site-header">
       <div class="container">
         <div class="d-flex justify-content-between align-items-center">
@@ -186,11 +276,9 @@ base_css_js = """
 
 # ------------------ Helpers para renderização dinâmica ------------------
 def render_index_content():
-    # pega último evento (o mais recente) e último workshop
     last_event = Evento.query.order_by(Evento.created_at.desc()).first()
     last_workshop = Workshop.query.order_by(Workshop.created_at.desc()).first()
 
-    # Cards: Evento 2025 (usa last_event), Workshop (usa last_workshop)
     content = """
       <div class="text-center py-5" style="background:var(--terra-4); border-radius:8px;">
         <h1 class="mb-3" style="color:var(--terra-1)">Conferência de Mulheres 2025</h1>
@@ -208,15 +296,13 @@ def render_index_content():
           <div class="row mt-4">
     """
 
-    # Evento card - MODIFICAÇÃO AQUI: Sempre mostrar "Evento 2025" no título
     if last_event:
-        # se evento fechado e tiver fotos, capa = primeira foto; se aberto - placeholder
         if last_event.fotos and len(last_event.fotos) > 0:
             cover = "/static/uploads/" + last_event.fotos[0].filename
         else:
             cover = "https://placehold.co/800x600/f6eadf/c2773a?text=Evento+2025"
         content += """
-          <div class="col-md-6 mb-4">
+          <div class="col-md-6 mb-4 animate-fade-in-up">
             <div class="card event-card">
               <img src=\"""" + cover + """\" class="event-img" alt="Evento 2025">
               <div class="card-body text-center">
@@ -229,9 +315,8 @@ def render_index_content():
           </div>
         """
     else:
-        # placeholder evento 2025
         content += """
-          <div class="col-md-6 mb-4">
+          <div class="col-md-6 mb-4 animate-fade-in-up">
             <div class="card event-card">
               <img src="https://placehold.co/800x600/f6eadf/c2773a?text=Evento+2025" class="event-img" alt="Evento 2025">
               <div class="card-body text-center">
@@ -243,13 +328,11 @@ def render_index_content():
           </div>
         """
 
-    # Workshop card
     if last_workshop:
         cover_w = "https://placehold.co/800x600/f6eadf/c2773a?text=" + (last_workshop.titulo.replace(" ", "+"))
-        status_line = last_workshop.status
         description_w = last_workshop.abordagem if last_workshop.abordagem else "Em Breve"
         content += """
-          <div class="col-md-6 mb-4">
+          <div class="col-md-6 mb-4 animate-fade-in-up">
             <div class="card event-card">
               <img src=\"""" + cover_w + """\" class="event-img" alt=\"""" + last_workshop.titulo + """\">
               <div class="card-body text-center">
@@ -261,9 +344,8 @@ def render_index_content():
           </div>
         """
     else:
-        # placeholder workshop
         content += """
-          <div class="col-md-6 mb-4">
+          <div class="col-md-6 mb-4 animate-fade-in-up">
             <div class="card event-card">
               <img src="https://placehold.co/800x600/f6eadf/c2773a?text=Workshop" class="event-img" alt="Workshop">
               <div class="card-body text-center">
@@ -321,9 +403,17 @@ def get_contato_content():
       <div class="card mt-3">
         <div class="card-body">
           <h5>Site Desenvolvido por TM Code</h5>
-          <p>Contatos do WhatsApp: (81) 99514-3900  |  (81) 98773-4133</p>
+          <p>Contatos do WhatsApp: 
+            <a href="https://wa.me/5581995143900" target="_blank" class="text-decoration-none">(81) 99514-3900</a> | 
+            <a href="https://wa.me/5581987734133" target="_blank" class="text-decoration-none">(81) 98773-4133</a>
+          </p>
           <div class="mt-3">
             <img src=\"""" + LOGO_URL + """\" style="height: 70px;" alt="Logo TM Code" />
+          </div>
+          <div class="mt-2">
+            <a href="https://tmcodeportifolio.netlify.app/" target="_blank" class="btn btn-terra btn-sm">
+              <i class="fas fa-external-link-alt me-1"></i> Ver Portfólio
+            </a>
           </div>
         </div>
       </div>
@@ -337,24 +427,103 @@ def get_contato_content():
 """
 
 def get_inscricao_content():
-    # Pega o último evento aberto para mostrar o valor correto
-    last_event = Evento.query.filter_by(status='Aberto').order_by(Evento.created_at.desc()).first()
-    valor_inscricao = PAYMENT_AMOUNT  # Valor padrão
-    if last_event and last_event.valor_inscricao:
-        valor_inscricao = last_event.valor_inscricao
+    # Pega todos os eventos (abertos e encerrados)
+    eventos = Evento.query.order_by(Evento.status.desc(), Evento.created_at.desc()).all()
     
-    return """
-  <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - Conferência de Mulheres</h2>
+    if not eventos:
+        return """
+        <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - Conferência de Mulheres</h2>
+        <div class="alert alert-info">
+          <h4>Nenhum evento disponível no momento</h4>
+          <p>Em breve teremos novos eventos. Fique atenta às nossas redes sociais!</p>
+        </div>
+        """
+    
+    # Se há apenas um evento aberto, mostra diretamente
+    eventos_abertos = [e for e in eventos if e.status == 'Aberto']
+    eventos_encerrados = [e for e in eventos if e.status == 'Fechado']
+    
+    if len(eventos_abertos) == 1:
+        evento_selecionado = eventos_abertos[0]
+        return get_inscricao_form(evento_selecionado)
+    else:
+        return get_selecao_evento_content(eventos_abertos, eventos_encerrados)
+
+def get_selecao_evento_content(eventos_abertos, eventos_encerrados):
+    content = """
+    <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - Conferência de Mulheres</h2>
+    <div class="card p-4 mb-4">
+      <h4 style="color:var(--terra-2)">Selecione o Evento</h4>
+      <p>Escolha abaixo o evento para o qual deseja se inscrever:</p>
+    """
+    
+    if eventos_abertos:
+        content += """
+        <div class="mb-4">
+          <h5 style="color:var(--terra-2)">Eventos com Inscrições Abertas</h5>
+          <div class="row">
+        """
+        for evento in eventos_abertos:
+            content += f"""
+            <div class="col-md-6 mb-3">
+              <div class="card event-card">
+                <div class="card-body">
+                  <h5>{evento.titulo}</h5>
+                  <p><strong>Data:</strong> {evento.data or 'A definir'}</p>
+                  <p><strong>Horário:</strong> {evento.horario or 'A definir'}</p>
+                  <p><strong>Local:</strong> {evento.local or 'A definir'}</p>
+                  <p><strong>Valor:</strong> R$ {evento.valor_inscricao or '10.00'}</p>
+                  <a href="/inscricao/{evento.id}" class="btn btn-terra">Inscrever-se</a>
+                </div>
+              </div>
+            </div>
+            """
+        content += "</div></div>"
+    
+    if eventos_encerrados:
+        content += """
+        <div class="mb-4">
+          <h5 style="color:var(--terra-2)">Eventos Encerrados</h5>
+          <div class="row">
+        """
+        for evento in eventos_encerrados:
+            content += f"""
+            <div class="col-md-6 mb-3">
+              <div class="card event-card">
+                <div class="card-body">
+                  <h5>{evento.titulo}</h5>
+                  <p><strong>Data:</strong> {evento.data or 'A definir'}</p>
+                  <p><strong>Status:</strong> <span class="badge bg-secondary">Encerrado</span></p>
+                  <p><strong>Local:</strong> {evento.local or 'A definir'}</p>
+                  <a href="/evento/{evento.id}" class="btn btn-outline-secondary">Ver Detalhes</a>
+                </div>
+              </div>
+            </div>
+            """
+        content += "</div></div>"
+    
+    content += "</div>"
+    return content
+
+def get_inscricao_form(evento):
+    valor_inscricao = evento.valor_inscricao or PAYMENT_AMOUNT
+    qr_code_url = get_qr_code_url(valor_inscricao)
+    
+    return f"""
+  <h2 class="mb-4" style="color:var(--terra-1)">Inscrição - {evento.titulo}</h2>
 
   <div class="card p-4 mb-4">
     <div class="mb-4">
       <h4 style="color:var(--terra-2)">Informações do Evento</h4>
-      <p><strong>Data:</strong> 06/12/2025</p>
-      <p><strong>Horário:</strong> 16hs às 21hs</p>
-      <p><strong>Local:</strong> A definir</p>
+      <p><strong>Evento:</strong> {evento.titulo}</p>
+      <p><strong>Data:</strong> {evento.data or 'A definir'}</p>
+      <p><strong>Horário:</strong> {evento.horario or 'A definir'}</p>
+      <p><strong>Local:</strong> {evento.local or 'A definir'}</p>
+      <p><strong>Descrição:</strong> {evento.descricao or 'Em breve mais informações'}</p>
     </div>
 
     <form id="regForm" method="POST" action="/submit_inscricao">
+      <input type="hidden" name="evento_id" value="{evento.id}">
       <h4 style="color:var(--terra-2)">Dados Pessoais</h4>
       <div class="row">
         <div class="col-md-6 mb-3">
@@ -376,7 +545,7 @@ def get_inscricao_content():
       </div>
 
       <div class="mb-3 p-3" style="background-color: var(--terra-4); border-radius: 8px;">
-        <strong>Valor da inscrição: R$ """ + valor_inscricao + """</strong>
+        <strong>Valor da inscrição: R$ {valor_inscricao}</strong>
       </div>
 
       <button type="submit" class="btn btn-terra btn-lg">Efetuar pagamento</button>
@@ -393,12 +562,12 @@ def get_inscricao_content():
         </div>
         <div class="modal-body text-center">
           <div class="pix-info">
-            <p>Valor a ser pago: <strong>R$ """ + valor_inscricao + """</strong></p>
-            <p>Chave Pix: <span class="pix-key">""" + PIX_KEY + """</span></p>
+            <p>Valor a ser pago: <strong>R$ {valor_inscricao}</strong></p>
+            <p>Chave Pix: <span class="pix-key">{PIX_KEY}</span></p>
           </div>
 
           <p>Escaneie o QR Code abaixo para realizar o pagamento:</p>
-          <img id="qrImage" class="qr-img" src=\"""" + QR_URL + """\" alt="QR Code Pix">
+          <img id="qrImage" class="qr-img" src="{qr_code_url}" alt="QR Code Pix">
 
           <div class="mt-3">
             <button id="confirmPayBtn" class="btn btn-success">Confirmar pagamento</button>
@@ -487,7 +656,7 @@ print_tpl = """
     </div>
 
     <div style="display:flex;gap:20px;align-items:center;margin-top:12px;">
-      <img src=\"""" + QR_URL + """\" class="qr" alt="QR Code Pix">
+      <img src="{{ qr_code_url }}" class="qr" alt="QR Code Pix">
       <div>
         <div style="font-weight:700">Pagamento de Inscrição Realizada</div>
         <div class="instructions">
@@ -529,22 +698,21 @@ def quem_somos():
 
 @app.route('/eventos')
 def eventos():
-    # lista todos eventos
     eventos = Evento.query.order_by(Evento.created_at.desc()).all()
     content = "<h2 style='color:var(--terra-1)'>Eventos Cadastrados</h2><div class='row'>"
     if not eventos:
         content += "<div class='col-12'><p>Nenhum evento cadastrado.</p></div>"
     else:
         for ev in eventos:
-            content += """
-            <div class='col-md-6 mb-4'>
+            content += f"""
+            <div class='col-md-6 mb-4 animate-fade-in-up'>
               <div class='card event-card'>
                 <div class='card-body'>
-                  <h5>""" + ev.titulo + """ <small class='text-muted'>(""" + ev.status + """)</small></h5>
-                  <p><strong>Data:</strong> """ + (ev.data or '') + """ <strong>Horário:</strong> """ + (ev.horario or '') + """</p>
-                  <p><strong>Valor da inscrição:</strong> R$ """ + (ev.valor_inscricao or PAYMENT_AMOUNT) + """</p>
-                  <p>""" + ((ev.descricao or '')[:180]) + """</p>
-                  <a class='btn btn-terra' href='/evento/""" + str(ev.id) + """'>Abrir</a>
+                  <h5>{ev.titulo} <small class='text-muted'>({ev.status})</small></h5>
+                  <p><strong>Data:</strong> {ev.data or ''} <strong>Horário:</strong> {ev.horario or ''}</p>
+                  <p><strong>Valor da inscrição:</strong> R$ {ev.valor_inscricao or PAYMENT_AMOUNT}</p>
+                  <p>{ (ev.descricao or '')[:180] }</p>
+                  <a class='btn btn-terra' href='/evento/{ev.id}'>Abrir</a>
                 </div>
               </div>
             </div>
@@ -562,8 +730,17 @@ def contato():
                                   scripts="")
 
 @app.route('/inscricao')
-def inscricao():
-    content = get_inscricao_content()
+@app.route('/inscricao/<int:evento_id>')
+def inscricao(evento_id=None):
+    if evento_id:
+        evento = Evento.query.get_or_404(evento_id)
+        if evento.status != 'Aberto':
+            flash("Este evento não está com inscrições abertas.", "warning")
+            return redirect(url_for('inscricao'))
+        content = get_inscricao_form(evento)
+    else:
+        content = get_inscricao_content()
+    
     return render_template_string(base_css_js.replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts=inscricao_scripts)
@@ -574,9 +751,19 @@ def submit_inscricao():
     sobrenome = request.form.get('sobrenome', '').strip()
     cpf = request.form.get('cpf', '').strip()
     telefone = request.form.get('telefone', '').strip()
+    evento_id = request.form.get('evento_id')
+    
     if not (nome and sobrenome and cpf and telefone):
         return "Preencha todos os campos", 400
-    reg = Registration(nome=nome, sobrenome=sobrenome, cpf=cpf, telefone=telefone)
+    
+    # Verifica se o evento existe e está aberto
+    evento = None
+    if evento_id:
+        evento = Evento.query.get(evento_id)
+        if not evento or evento.status != 'Aberto':
+            return "Evento não encontrado ou inscrições encerradas", 400
+    
+    reg = Registration(nome=nome, sobrenome=sobrenome, cpf=cpf, telefone=telefone, evento_id=evento_id)
     db.session.add(reg)
     db.session.commit()
     return redirect(url_for('inscricao') + f"?show_qr=1&id={reg.id}")
@@ -595,50 +782,50 @@ def confirm_payment():
 @app.route('/print_confirmation/<int:reg_id>')
 def print_confirmation(reg_id):
     reg = Registration.query.get_or_404(reg_id)
-    # Pega o valor do último evento aberto ou usa o padrão
-    last_event = Evento.query.filter_by(status='Aberto').order_by(Evento.created_at.desc()).first()
-    valor_inscricao = PAYMENT_AMOUNT
-    if last_event and last_event.valor_inscricao:
-        valor_inscricao = last_event.valor_inscricao
-        
+    evento = Evento.query.get(reg.evento_id) if reg.evento_id else None
+    valor_inscricao = evento.valor_inscricao if evento else PAYMENT_AMOUNT
+    qr_code_url = get_qr_code_url(valor_inscricao)
+    event_title = evento.titulo if evento else "Conferência de Mulheres"
+    
     return render_template_string(print_tpl,
                                   reg=reg,
                                   payment_amount=valor_inscricao,
                                   pix_key=PIX_KEY,
-                                  event_title="Conferência de Mulheres")
+                                  event_title=event_title,
+                                  qr_code_url=qr_code_url)
 
 # ---------------- Evento page (galeria / agradecimento) ----------------
 @app.route('/evento/<int:evento_id>')
 def ver_evento(evento_id):
     ev = Evento.query.get_or_404(evento_id)
     photos = ev.fotos
-    gallery_html = """
-      <h2 style="color:var(--terra-1)">""" + ev.titulo + """ <small class="text-muted">(""" + ev.status + """)</small></h2>
-      <p><strong>Data:</strong> """ + (ev.data or '') + """ <strong>Horário:</strong> """ + (ev.horario or '') + """</p>
-      <p><strong>Local:</strong> """ + (ev.local or '') + """</p>
-      <p><strong>Valor da inscrição:</strong> R$ """ + (ev.valor_inscricao or PAYMENT_AMOUNT) + """</p>
-      <p>""" + (ev.descricao or '') + """</p>
+    gallery_html = f"""
+      <h2 style="color:var(--terra-1)">{ev.titulo} <small class="text-muted">({ev.status})</small></h2>
+      <p><strong>Data:</strong> {ev.data or ''} <strong>Horário:</strong> {ev.horario or ''}</p>
+      <p><strong>Local:</strong> {ev.local or ''}</p>
+      <p><strong>Valor da inscrição:</strong> R$ {ev.valor_inscricao or PAYMENT_AMOUNT}</p>
+      <p>{ev.descricao or ''}</p>
       <hr />
     """
     if ev.status == 'Aberto':
         gallery_html += "<div class='alert alert-info'>Inscrições abertas.</div>"
-        gallery_html += "<a class='btn btn-terra mb-3' href='/inscricao'>Inscrever-se</a>"
+        gallery_html += f"<a class='btn btn-terra mb-3' href='/inscricao/{ev.id}'>Inscrever-se</a>"
     else:
         gallery_html += "<div class='alert alert-secondary'>Evento encerrado. Agradecimento:</div>"
         if ev.agradecimento:
-            gallery_html += "<div class='p-3 mb-3' style='background:#f6eadf;border-radius:8px'>" + ev.agradecimento + "</div>"
+            gallery_html += f"<div class='p-3 mb-3' style='background:#f6eadf;border-radius:8px'>{ev.agradecimento}</div>"
 
     gallery_html += "<div class='row mt-4'>"
     if not photos:
         gallery_html += "<div class='col-12'><p>Nenhuma foto cadastrada para este evento.</p></div>"
     else:
         for p in photos:
-            gallery_html += """
-            <div class="col-md-4 mb-3">
-              <div class="card">
-                <img src=\"/static/uploads/""" + p.filename + """\" class="img-fluid" style="height:220px;object-fit:cover;border-radius:8px" />
+            gallery_html += f"""
+            <div class="col-md-4 mb-3 animate-fade-in-up">
+              <div class="card event-card">
+                <img src="/static/uploads/{p.filename}" class="img-fluid" style="height:220px;object-fit:cover;border-radius:8px" />
                 <div class="card-body">
-                  <p>""" + (p.comentario or '') + """</p>
+                  <p>{p.comentario or ''}</p>
                 </div>
               </div>
             </div>
@@ -652,12 +839,12 @@ def ver_evento(evento_id):
 @app.route('/workshop/<int:workshop_id>')
 def ver_workshop(workshop_id):
     wk = Workshop.query.get_or_404(workshop_id)
-    html = """
-      <h2 style="color:var(--terra-1)">""" + wk.titulo + """ <small class="text-muted">(""" + wk.status + """)</small></h2>
-      <p><strong>Data:</strong> """ + (wk.data or '') + """ <strong>Horário:</strong> """ + (wk.horario or '') + """</p>
-      <p><strong>Local:</strong> """ + (wk.local or '') + """</p>
+    html = f"""
+      <h2 style="color:var(--terra-1)">{wk.titulo} <small class="text-muted">({wk.status})</small></h2>
+      <p><strong>Data:</strong> {wk.data or ''} <strong>Horário:</strong> {wk.horario or ''}</p>
+      <p><strong>Local:</strong> {wk.local or ''}</p>
       <h4>Abordagem</h4>
-      <p>""" + (wk.abordagem or 'Em breve') + """</p>
+      <p>{wk.abordagem or 'Em breve'}</p>
     """
     return render_template_string(base_css_js.replace("{{ content|safe }}", html),
                                   whatsapp_number=WHATSAPP_NUMBER,
@@ -669,9 +856,18 @@ def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get('admin_logged'):
-            return redirect(url_for('admin_login'))
+            # Redireciona para login em vez de permitir acesso
+            if request.endpoint and request.endpoint.startswith('admin_'):
+                return redirect(url_for('admin_login'))
+            abort(403)  # Forbidden
         return f(*args, **kwargs)
     return decorated
+
+# Protege todas as rotas admin
+@app.before_request
+def require_login_for_admin():
+    if request.endpoint and request.endpoint.startswith('admin_') and not session.get('admin_logged'):
+        return redirect(url_for('admin_login'))
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -679,6 +875,7 @@ def admin_login():
         pwd = request.form.get('password', '')
         if pwd == ADMIN_PASSWORD:
             session['admin_logged'] = True
+            session.permanent = True
             flash("Acesso concedido.", "success")
             return redirect(url_for('admin_dashboard'))
         else:
@@ -706,45 +903,41 @@ def admin_logout():
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
-    # dashboard com 4 cards: Novo Evento / Ajuste de Evento / Novo Workshop / Excluir Evento / Participantes
     open_events = Evento.query.filter_by(status='Aberto').order_by(Evento.created_at.desc()).all()
-    all_events = Evento.query.order_by(Evento.created_at.desc()).all()
-    all_workshops = Workshop.query.order_by(Workshop.created_at.desc()).all()
-    participants = Registration.query.filter_by(paid=True).order_by(Registration.created_at.desc()).all()
     
     content = """
       <h2 style="color:var(--terra-1)">Painel do Administrador</h2>
       <div class="row">
         <div class="col-md-4">
-          <div class="card p-3 mb-3">
+          <div class="card p-3 mb-3 event-card">
             <h5>Novo Evento</h5>
             <p>Cadastrar novo evento (será Aberto por padrão).</p>
             <a class="btn btn-terra" href="/admin/evento/novo">Criar Evento</a>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card p-3 mb-3">
+          <div class="card p-3 mb-3 event-card">
             <h5>Ajuste de Evento</h5>
             <p>Fechar evento (adicionar fotos e agradecimento).</p>
             <a class="btn btn-terra" href="/admin/evento/ajuste">Ajustar Evento</a>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card p-3 mb-3">
+          <div class="card p-3 mb-3 event-card">
             <h5>Novo Workshop</h5>
             <p>Cadastrar workshop (status inicial: Em Breve).</p>
             <a class="btn btn-terra" href="/admin/workshop/novo">Criar Workshop</a>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card p-3 mb-3">
+          <div class="card p-3 mb-3 event-card">
             <h5>Excluir Evento/Workshop</h5>
             <p>Excluir eventos ou workshops existentes.</p>
             <a class="btn btn-terra" href="/admin/excluir">Gerenciar Exclusões</a>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card p-3 mb-3">
+          <div class="card p-3 mb-3 event-card">
             <h5>Participantes</h5>
             <p>Visualizar lista de participantes confirmados.</p>
             <a class="btn btn-terra" href="/admin/participantes">Ver Participantes</a>
@@ -760,15 +953,15 @@ def admin_dashboard():
         content += "<div class='col-12'><p>Sem eventos abertos.</p></div>"
     else:
         for ev in open_events:
-            content += """
-            <div class="col-md-6 mb-3">
-              <div class="card p-2">
-                <h5>""" + ev.titulo + """</h5>
-                <p>""" + (ev.data or '') + """ - """ + (ev.horario or '') + """</p>
-                <p><strong>Valor da inscrição:</strong> R$ """ + (ev.valor_inscricao or PAYMENT_AMOUNT) + """</p>
+            content += f"""
+            <div class="col-md-6 mb-3 animate-fade-in-up">
+              <div class="card p-2 event-card">
+                <h5>{ev.titulo}</h5>
+                <p>{ev.data or ''} - {ev.horario or ''}</p>
+                <p><strong>Valor da inscrição:</strong> R$ {ev.valor_inscricao or PAYMENT_AMOUNT}</p>
                 <div>
-                  <a class="btn btn-sm btn-outline-terra" href=\"/evento/""" + str(ev.id) + """\">Ver</a>
-                  <a class="btn btn-sm btn-terra" href=\"/admin/evento/""" + str(ev.id) + """/fechar\">Fechar Evento</a>
+                  <a class="btn btn-sm btn-outline-terra" href="/evento/{ev.id}">Ver</a>
+                  <a class="btn btn-sm btn-terra" href="/admin/evento/{ev.id}/fechar">Fechar Evento</a>
                 </div>
               </div>
             </div>
@@ -777,7 +970,6 @@ def admin_dashboard():
     return render_template_string(base_css_js.replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
-
 # ---------------- Admin: Novo Evento ----------------
 @app.route('/admin/evento/novo', methods=['GET', 'POST'])
 @admin_required
