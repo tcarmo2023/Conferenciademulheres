@@ -46,7 +46,7 @@ class Registration(db.Model):
     sobrenome = db.Column(db.String(120), nullable=False)
     cpf = db.Column(db.String(20), nullable=False)
     telefone = db.Column(db.String(30), nullable=False)
-    evento_id = db.Column(db.Integer, db.ForeignKey('evento.id'))  # Novo campo para associar inscrição ao evento
+    evento_id = db.Column(db.Integer, db.ForeignKey('evento.id'))
     paid = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -58,7 +58,7 @@ class Evento(db.Model):
     local = db.Column(db.String(200))
     descricao = db.Column(db.Text)
     valor_inscricao = db.Column(db.String(20), default="10.00")
-    status = db.Column(db.String(20), default="Aberto")  # Aberto / Fechado
+    status = db.Column(db.String(20), default="Aberto")
     agradecimento = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     fotos = db.relationship('FotoEvento', backref='evento', lazy=True, cascade="all,delete-orphan")
@@ -78,7 +78,7 @@ class Workshop(db.Model):
     horario = db.Column(db.String(50))
     local = db.Column(db.String(200))
     abordagem = db.Column(db.Text)
-    status = db.Column(db.String(20), default="Em Breve")  # Em Breve / Aberto
+    status = db.Column(db.String(20), default="Em Breve")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Criar tabelas dentro do contexto da aplicação
@@ -90,7 +90,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def save_uploaded_file(file_storage):
-    """Salva file_storage em static/uploads e retorna nome salvo."""
     filename = secure_filename(file_storage.filename)
     base, ext = os.path.splitext(filename)
     unique_name = f"{base}_{int(datetime.utcnow().timestamp())}{ext}"
@@ -99,10 +98,36 @@ def save_uploaded_file(file_storage):
     return unique_name
 
 def get_qr_code_url(valor):
-    """Retorna a URL do QR Code baseado no valor da inscrição"""
     return QR_CODES.get(valor, QR_CODES["10.00"])
 
-# ---------------- Base template (usa URLs diretas) ----------------
+# ---------------- SEGURANÇA ADMIN - CORREÇÃO ----------------
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged'):
+            flash("Acesso negado. Faça login primeiro.", "danger")
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Lista de todas as rotas que precisam de proteção
+ADMIN_ROUTES = [
+    '/admin', '/admin/', '/admin/evento/novo', '/admin/evento/ajuste',
+    '/admin/evento/<int:evento_id>/fechar', '/admin/workshop/novo',
+    '/admin/excluir', '/admin/participantes', '/admin/exportar_participantes',
+    '/admin/workshop/<int:workshop_id>/editar'
+]
+
+@app.before_request
+def check_admin_access():
+    # Verifica se a rota atual é uma rota administrativa
+    if any(request.path.startswith(route.replace('<int:evento_id>', '').replace('<int:workshop_id>', '')) 
+           for route in ADMIN_ROUTES):
+        if not session.get('admin_logged'):
+            return redirect(url_for('admin_login'))
+
+# ---------------- Base template ----------------
 base_css_js = """
 <!doctype html>
 <html lang="pt-br">
@@ -188,7 +213,6 @@ base_css_js = """
         75% { transform: translateY(-10px) rotate(-5deg); }
       }
       
-      /* Animações para cards */
       @keyframes fadeInUp {
         from {
           opacity: 0;
@@ -206,7 +230,6 @@ base_css_js = """
     </style>
   </head>
   <body>
-    <!-- Borboleta animada -->
     <img src=\"""" + BORBOLETA_ANIMADA_URL + """\" class="borboleta-flutuante" alt="Borboleta">
     
     <header class="site-header">
@@ -301,15 +324,15 @@ def render_index_content():
             cover = "/static/uploads/" + last_event.fotos[0].filename
         else:
             cover = "https://placehold.co/800x600/f6eadf/c2773a?text=Evento+2025"
-        content += """
+        content += f"""
           <div class="col-md-6 mb-4 animate-fade-in-up">
             <div class="card event-card">
-              <img src=\"""" + cover + """\" class="event-img" alt="Evento 2025">
+              <img src="{cover}" class="event-img" alt="Evento 2025">
               <div class="card-body text-center">
                 <h2 style="color:var(--terra-2)">Evento 2025</h2>
                 <p>Essência que Transforma<br>Próximo encontro — aguarde mais informações.</p>
-                <a class="btn btn-terra" href=\"/evento/""" + str(last_event.id) + """\">Ver</a>
-                """ + ("<a class='btn btn-terra ms-2' href='/inscricao'>Inscrever-se</a>" if last_event.status == 'Aberto' else "") + """
+                <a class="btn btn-terra" href="/evento/{last_event.id}">Ver</a>
+                {"<a class='btn btn-terra ms-2' href='/inscricao'>Inscrever-se</a>" if last_event.status == 'Aberto' else ""}
               </div>
             </div>
           </div>
@@ -331,14 +354,14 @@ def render_index_content():
     if last_workshop:
         cover_w = "https://placehold.co/800x600/f6eadf/c2773a?text=" + (last_workshop.titulo.replace(" ", "+"))
         description_w = last_workshop.abordagem if last_workshop.abordagem else "Em Breve"
-        content += """
+        content += f"""
           <div class="col-md-6 mb-4 animate-fade-in-up">
             <div class="card event-card">
-              <img src=\"""" + cover_w + """\" class="event-img" alt=\"""" + last_workshop.titulo + """\">
+              <img src="{cover_w}" class="event-img" alt="{last_workshop.titulo}">
               <div class="card-body text-center">
-                <h2 style="color:var(--terra-2)">""" + last_workshop.titulo + """</h2>
-                <p>""" + ('Em Breve' if last_workshop.status=='Em Breve' else description_w) + """</p>
-                <a class="btn btn-terra" href=\"/workshop/""" + str(last_workshop.id) + """\">Ver</a>
+                <h2 style="color:var(--terra-2)">{last_workshop.titulo}</h2>
+                <p>{'Em Breve' if last_workshop.status=='Em Breve' else description_w}</p>
+                <a class="btn btn-terra" href="/workshop/{last_workshop.id}">Ver</a>
               </div>
             </div>
           </div>
@@ -427,7 +450,6 @@ def get_contato_content():
 """
 
 def get_inscricao_content():
-    # Pega todos os eventos (abertos e encerrados)
     eventos = Evento.query.order_by(Evento.status.desc(), Evento.created_at.desc()).all()
     
     if not eventos:
@@ -439,7 +461,6 @@ def get_inscricao_content():
         </div>
         """
     
-    # Se há apenas um evento aberto, mostra diretamente
     eventos_abertos = [e for e in eventos if e.status == 'Aberto']
     eventos_encerrados = [e for e in eventos if e.status == 'Fechado']
     
@@ -756,7 +777,6 @@ def submit_inscricao():
     if not (nome and sobrenome and cpf and telefone):
         return "Preencha todos os campos", 400
     
-    # Verifica se o evento existe e está aberto
     evento = None
     if evento_id:
         evento = Evento.query.get(evento_id)
@@ -794,7 +814,7 @@ def print_confirmation(reg_id):
                                   event_title=event_title,
                                   qr_code_url=qr_code_url)
 
-# ---------------- Evento page (galeria / agradecimento) ----------------
+# ---------------- Evento page ----------------
 @app.route('/evento/<int:evento_id>')
 def ver_evento(evento_id):
     ev = Evento.query.get_or_404(evento_id)
@@ -850,27 +870,13 @@ def ver_workshop(workshop_id):
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
-# ---------------- ADMIN (login, dashboard com 4 cards) ----------------
-def admin_required(f):
-    from functools import wraps
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get('admin_logged'):
-            # Redireciona para login em vez de permitir acesso
-            if request.endpoint and request.endpoint.startswith('admin_'):
-                return redirect(url_for('admin_login'))
-            abort(403)  # Forbidden
-        return f(*args, **kwargs)
-    return decorated
-
-# Protege todas as rotas admin
-@app.before_request
-def require_login_for_admin():
-    if request.endpoint and request.endpoint.startswith('admin_') and not session.get('admin_logged'):
-        return redirect(url_for('admin_login'))
-
+# ---------------- ADMIN Routes (PROTEGIDAS) ----------------
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
+    # Se já está logado, redireciona para o dashboard
+    if session.get('admin_logged'):
+        return redirect(url_for('admin_dashboard'))
+        
     if request.method == 'POST':
         pwd = request.form.get('password', '')
         if pwd == ADMIN_PASSWORD:
@@ -881,11 +887,15 @@ def admin_login():
         else:
             flash("Senha incorreta.", "danger")
             return redirect(url_for('admin_login'))
+    
     content = """
       <h2 style="color:var(--terra-1)">Área do Administrador</h2>
       <div class="card p-4">
         <form method="POST">
-          <div class="mb-3"><label class="form-label">Senha</label><input name="password" type="password" class="form-control" required></div>
+          <div class="mb-3">
+            <label class="form-label">Senha</label>
+            <input name="password" type="password" class="form-control" required>
+          </div>
           <button class="btn btn-terra">Entrar</button>
         </form>
       </div>
@@ -980,26 +990,56 @@ def admin_novo_evento():
         horario = request.form.get('horario', '').strip()
         local = request.form.get('local', '').strip()
         descricao = request.form.get('descricao', '').strip()
-        valor_inscricao = request.form.get('valor_inscricao', '10.00').strip()  # Campo para valor da inscrição
+        valor_inscricao = request.form.get('valor_inscricao', '10.00').strip()
+        
         if not titulo:
             flash("Título obrigatório.", "danger")
             return redirect(url_for('admin_novo_evento'))
-        ev = Evento(titulo=titulo, data=data, horario=horario, local=local, descricao=descricao, valor_inscricao=valor_inscricao, status='Aberto')
+        
+        ev = Evento(
+            titulo=titulo, 
+            data=data, 
+            horario=horario, 
+            local=local, 
+            descricao=descricao, 
+            valor_inscricao=valor_inscricao, 
+            status='Aberto'
+        )
         db.session.add(ev)
         db.session.commit()
-        flash("Evento criado.", "success")
+        flash("Evento criado com sucesso!", "success")
         return redirect(url_for('admin_dashboard'))
+    
     content = """
       <h3 style="color:var(--terra-1)">Novo Evento</h3>
       <div class="card p-3">
         <form method="POST">
-          <div class="mb-2"><label>Título</label><input name="titulo" class="form-control" required></div>
-          <div class="mb-2"><label>Data</label><input name="data" class="form-control"></div>
-          <div class="mb-2"><label>Horário</label><input name="horario" class="form-control"></div>
-          <div class="mb-2"><label>Local</label><input name="local" class="form-control"></div>
-          <div class="mb-2"><label>Valor da Inscrição (R$)</label><input name="valor_inscricao" class="form-control" value="10.00" required></div>
-          <div class="mb-2"><label>Descrição</label><textarea name="descricao" class="form-control"></textarea></div>
+          <div class="mb-2">
+            <label class="form-label">Título do Evento *</label>
+            <input name="titulo" class="form-control" required placeholder="Ex: Conferência de Mulheres 2025">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Data</label>
+            <input name="data" type="date" class="form-control" placeholder="DD/MM/AAAA">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Horário</label>
+            <input name="horario" class="form-control" placeholder="Ex: 16h às 21h">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Local</label>
+            <input name="local" class="form-control" placeholder="Local do evento">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Valor da Inscrição (R$) *</label>
+            <input name="valor_inscricao" type="number" step="0.01" class="form-control" value="10.00" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Descrição</label>
+            <textarea name="descricao" class="form-control" rows="4" placeholder="Descrição detalhada do evento..."></textarea>
+          </div>
           <button class="btn btn-terra">Criar Evento</button>
+          <a href="/admin" class="btn btn-secondary ms-2">Cancelar</a>
         </form>
       </div>
     """
@@ -1013,23 +1053,33 @@ def admin_novo_evento():
 def admin_ajuste_evento():
     open_events = Evento.query.filter_by(status='Aberto').order_by(Evento.created_at.desc()).all()
     content = "<h3 style='color:var(--terra-1)'>Ajuste de Evento (Fechar)</h3>"
+    
     if not open_events:
-        content += "<div class='card p-3'><p>Não há eventos abertos para ajuste.</p></div>"
+        content += """
+        <div class='card p-4 text-center'>
+            <h5>Nenhum evento aberto para ajuste</h5>
+            <p>Todos os eventos estão fechados ou não há eventos cadastrados.</p>
+            <a href="/admin/evento/novo" class="btn btn-terra">Criar Novo Evento</a>
+        </div>
+        """
     else:
         content += "<div class='row'>"
         for ev in open_events:
-            content += """
-            <div class='col-md-6 mb-3'>
-              <div class='card p-3'>
-                <h5>""" + ev.titulo + """</h5>
-                <p>""" + (ev.data or '') + """ - """ + (ev.horario or '') + """</p>
-                <p><strong>Valor da inscrição:</strong> R$ """ + (ev.valor_inscricao or PAYMENT_AMOUNT) + """</p>
-                <p>""" + ((ev.descricao or '')[:160]) + """</p>
-                <a class='btn btn-terra' href='/admin/evento/""" + str(ev.id) + """/fechar'>Fechar Evento (adicionar fotos/agradecimento)</a>
+            content += f"""
+            <div class='col-md-6 mb-3 animate-fade-in-up'>
+              <div class='card p-3 event-card'>
+                <h5>{ev.titulo}</h5>
+                <p><strong>Data:</strong> {ev.data or 'Não definida'}</p>
+                <p><strong>Horário:</strong> {ev.horario or 'Não definido'}</p>
+                <p><strong>Local:</strong> {ev.local or 'Não definido'}</p>
+                <p><strong>Valor da inscrição:</strong> R$ {ev.valor_inscricao or PAYMENT_AMOUNT}</p>
+                <p class='text-muted'>{ (ev.descricao or 'Sem descrição')[:100] }...</p>
+                <a class='btn btn-terra' href='/admin/evento/{ev.id}/fechar'>Fechar Evento (adicionar fotos/agradecimento)</a>
               </div>
             </div>
             """
         content += "</div>"
+    
     return render_template_string(base_css_js.replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
@@ -1038,45 +1088,84 @@ def admin_ajuste_evento():
 @admin_required
 def admin_ajuste_evento_closing(evento_id):
     ev = Evento.query.get_or_404(evento_id)
+    
+    if ev.status == 'Fechado':
+        flash("Este evento já está fechado.", "warning")
+        return redirect(url_for('admin_ajuste_evento'))
+    
     if request.method == 'POST':
-        # receber arquivos e agradecimento
         files = request.files.getlist('fotos')
         agradecimento = request.form.get('agradecimento', '').strip()
+        comentario_geral = request.form.get('comentario', '').strip()
+        
         valid_files = [f for f in files if f and allowed_file(f.filename)]
+        
         if len(valid_files) < 5:
             flash("Para fechar o evento é necessário enviar no mínimo 5 fotos.", "danger")
             return redirect(url_for('admin_ajuste_evento_closing', evento_id=evento_id))
-        # salvar fotos
-        saved = []
+        
+        if not agradecimento:
+            flash("O texto de agradecimento é obrigatório.", "danger")
+            return redirect(url_for('admin_ajuste_evento_closing', evento_id=evento_id))
+        
+        # Salvar fotos
+        saved_files = []
         for f in valid_files:
-            fname = save_uploaded_file(f)
-            fe = FotoEvento(evento_id=evento_id, filename=fname, comentario=request.form.get('comentario', '').strip())
-            db.session.add(fe)
-            saved.append(fname)
-        # atualizar evento
+            try:
+                fname = save_uploaded_file(f)
+                fe = FotoEvento(
+                    evento_id=evento_id, 
+                    filename=fname, 
+                    comentario=comentario_geral
+                )
+                db.session.add(fe)
+                saved_files.append(fname)
+            except Exception as e:
+                flash(f"Erro ao salvar arquivo {f.filename}: {str(e)}", "danger")
+                continue
+        
+        # Atualizar evento
         ev.status = 'Fechado'
         ev.agradecimento = agradecimento
         db.session.commit()
-        flash(f"Evento '{ev.titulo}' fechado e {len(saved)} fotos adicionadas.", "success")
+        
+        flash(f"Evento '{ev.titulo}' fechado com sucesso! {len(saved_files)} fotos adicionadas.", "success")
         return redirect(url_for('admin_dashboard'))
 
-    content = """
-      <h3 style="color:var(--terra-1)">Fechar Evento: """ + ev.titulo + """</h3>
+    content = f"""
+      <h3 style="color:var(--terra-1)">Fechar Evento: {ev.titulo}</h3>
       <div class="card p-3">
         <form method="POST" enctype="multipart/form-data">
-          <div class="mb-2">
-            <label>Escolha as fotos (mínimo 5)</label>
+          <div class="alert alert-info">
+            <h6>Instruções para fechar o evento:</h6>
+            <ul class="mb-0">
+              <li>Selecione no mínimo 5 fotos do evento</li>
+              <li>Escreva uma mensagem de agradecimento para os participantes</li>
+              <li>Após o fechamento, o evento aparecerá como "Encerrado" para o público</li>
+            </ul>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Fotos do Evento (Mínimo 5) *</label>
             <input type="file" name="fotos" multiple class="form-control" accept="image/*" required>
+            <small class="text-muted">Selecione várias fotos mantendo a tecla CTRL pressionada</small>
           </div>
-          <div class="mb-2">
-            <label>Comentário para as fotos (opcional)</label>
-            <textarea name="comentario" class="form-control"></textarea>
+          
+          <div class="mb-3">
+            <label class="form-label">Comentário para as fotos (opcional)</label>
+            <textarea name="comentario" class="form-control" rows="2" placeholder="Ex: Momentos especiais do nosso encontro..."></textarea>
           </div>
-          <div class="mb-2">
-            <label>Agradecimento (texto que aparecerá quando o evento estiver fechado)</label>
-            <textarea name="agradecimento" class="form-control" required></textarea>
+          
+          <div class="mb-3">
+            <label class="form-label">Mensagem de Agradecimento *</label>
+            <textarea name="agradecimento" class="form-control" rows="5" required placeholder="Escreva uma mensagem especial de agradecimento para os participantes..."></textarea>
+            <small class="text-muted">Esta mensagem será exibida na página do evento após o fechamento</small>
           </div>
-          <button class="btn btn-terra">Fechar Evento e Salvar Fotos</button>
+          
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-terra">Fechar Evento e Salvar Fotos</button>
+            <a href="/admin/evento/ajuste" class="btn btn-secondary">Cancelar</a>
+          </div>
         </form>
       </div>
     """
@@ -1094,24 +1183,50 @@ def admin_novo_workshop():
         horario = request.form.get('horario', '').strip()
         local = request.form.get('local', '').strip()
         abordagem = request.form.get('abordagem', '').strip()
+        
         if not titulo:
             flash("Título obrigatório.", "danger")
             return redirect(url_for('admin_novo_workshop'))
-        wk = Workshop(titulo=titulo, data=data, horario=horario, local=local, abordagem=abordagem, status='Em Breve')
+        
+        wk = Workshop(
+            titulo=titulo, 
+            data=data, 
+            horario=horario, 
+            local=local, 
+            abordagem=abordagem, 
+            status='Em Breve'
+        )
         db.session.add(wk)
         db.session.commit()
-        flash("Workshop criado (status: Em Breve).", "success")
+        flash("Workshop criado com sucesso! (Status: Em Breve)", "success")
         return redirect(url_for('admin_dashboard'))
+    
     content = """
       <h3 style="color:var(--terra-1)">Novo Workshop</h3>
       <div class="card p-3">
         <form method="POST">
-          <div class="mb-2"><label>Título</label><input name="titulo" class="form-control" required></div>
-          <div class="mb-2"><label>Data</label><input name="data" class="form-control"></div>
-          <div class="mb-2"><label>Horário</label><input name="horario" class="form-control"></div>
-          <div class="mb-2"><label>Local</label><input name="local" class="form-control"></div>
-          <div class="mb-2"><label>Abordagem</label><textarea name="abordagem" class="form-control"></textarea></div>
+          <div class="mb-2">
+            <label class="form-label">Título do Workshop *</label>
+            <input name="titulo" class="form-control" required placeholder="Ex: Workshop de Autoconhecimento">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Data</label>
+            <input name="data" type="date" class="form-control">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Horário</label>
+            <input name="horario" class="form-control" placeholder="Ex: 14h às 17h">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Local</label>
+            <input name="local" class="form-control" placeholder="Local do workshop">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Abordagem/Descrição</label>
+            <textarea name="abordagem" class="form-control" rows="4" placeholder="Descreva a abordagem e conteúdo do workshop..."></textarea>
+          </div>
           <button class="btn btn-terra">Criar Workshop</button>
+          <a href="/admin" class="btn btn-secondary ms-2">Cancelar</a>
         </form>
       </div>
     """
@@ -1130,18 +1245,25 @@ def admin_excluir():
         if tipo == 'evento':
             evento = Evento.query.get(id_item)
             if evento:
-                # Primeiro exclui as fotos associadas
+                # Excluir fotos associadas primeiro
                 FotoEvento.query.filter_by(evento_id=id_item).delete()
-                # Depois exclui o evento
+                # Excluir inscrições associadas
+                Registration.query.filter_by(evento_id=id_item).delete()
+                # Excluir evento
                 db.session.delete(evento)
                 db.session.commit()
-                flash("Evento excluído com sucesso.", "success")
+                flash("Evento excluído com sucesso!", "success")
+            else:
+                flash("Evento não encontrado.", "danger")
+                
         elif tipo == 'workshop':
             workshop = Workshop.query.get(id_item)
             if workshop:
                 db.session.delete(workshop)
                 db.session.commit()
-                flash("Workshop excluído com sucesso.", "success")
+                flash("Workshop excluído com sucesso!", "success")
+            else:
+                flash("Workshop não encontrado.", "danger")
         
         return redirect(url_for('admin_excluir'))
     
@@ -1151,7 +1273,8 @@ def admin_excluir():
     content = """
       <h3 style="color:var(--terra-1)">Excluir Eventos/Workshops</h3>
       <div class="alert alert-warning">
-        <strong>Atenção:</strong> Esta ação é irreversível. Todos os dados do evento/workshop serão permanentemente excluídos.
+        <strong><i class="fas fa-exclamation-triangle me-2"></i>Atenção:</strong> Esta ação é irreversível. 
+        Todos os dados do evento/workshop (incluindo fotos e inscrições) serão permanentemente excluídos.
       </div>
       
       <div class="row">
@@ -1160,20 +1283,28 @@ def admin_excluir():
     """
     
     if not eventos:
-        content += "<p>Nenhum evento cadastrado.</p>"
+        content += """
+          <div class="card p-4 text-center">
+            <p class="mb-0">Nenhum evento cadastrado.</p>
+          </div>
+        """
     else:
         for evento in eventos:
-            content += """
-            <div class="card mb-3">
+            num_fotos = len(evento.fotos)
+            num_inscricoes = len(evento.inscricoes)
+            content += f"""
+            <div class="card mb-3 animate-fade-in-up">
               <div class="card-body">
-                <h5>""" + evento.titulo + """</h5>
-                <p><strong>Status:</strong> """ + evento.status + """</p>
-                <p><strong>Data:</strong> """ + (evento.data or 'Não definida') + """</p>
-                <p><strong>Valor da inscrição:</strong> R$ """ + (evento.valor_inscricao or PAYMENT_AMOUNT) + """</p>
-                <form method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.');">
+                <h5>{evento.titulo}</h5>
+                <p><strong>Status:</strong> <span class="badge bg-{'success' if evento.status=='Aberto' else 'secondary'}">{evento.status}</span></p>
+                <p><strong>Data:</strong> {evento.data or 'Não definida'}</p>
+                <p><strong>Fotos:</strong> {num_fotos} | <strong>Inscrições:</strong> {num_inscricoes}</p>
+                <form method="POST" onsubmit="return confirm('ATENÇÃO: Esta ação excluirá permanentemente o evento, {num_fotos} fotos e {num_inscricoes} inscrições. Tem certeza?');">
                   <input type="hidden" name="tipo" value="evento">
-                  <input type="hidden" name="id" value=\"""" + str(evento.id) + """\">
-                  <button type="submit" class="btn btn-danger">Excluir Evento</button>
+                  <input type="hidden" name="id" value="{evento.id}">
+                  <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash me-1"></i> Excluir Evento
+                  </button>
                 </form>
               </div>
             </div>
@@ -1186,19 +1317,25 @@ def admin_excluir():
     """
     
     if not workshops:
-        content += "<p>Nenhum workshop cadastrado.</p>"
+        content += """
+          <div class="card p-4 text-center">
+            <p class="mb-0">Nenhum workshop cadastrado.</p>
+          </div>
+        """
     else:
         for workshop in workshops:
-            content += """
-            <div class="card mb-3">
+            content += f"""
+            <div class="card mb-3 animate-fade-in-up">
               <div class="card-body">
-                <h5>""" + workshop.titulo + """</h5>
-                <p><strong>Status:</strong> """ + workshop.status + """</p>
-                <p><strong>Data:</strong> """ + (workshop.data or 'Não definida') + """</p>
-                <form method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este workshop? Esta ação não pode ser desfeita.');">
+                <h5>{workshop.titulo}</h5>
+                <p><strong>Status:</strong> <span class="badge bg-{'warning' if workshop.status=='Em Breve' else 'success'}">{workshop.status}</span></p>
+                <p><strong>Data:</strong> {workshop.data or 'Não definida'}</p>
+                <form method="POST" onsubmit="return confirm('Tem certeza que deseja excluir permanentemente este workshop?');">
                   <input type="hidden" name="tipo" value="workshop">
-                  <input type="hidden" name="id" value=\"""" + str(workshop.id) + """\">
-                  <button type="submit" class="btn btn-danger">Excluir Workshop</button>
+                  <input type="hidden" name="id" value="{workshop.id}">
+                  <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash me-1"></i> Excluir Workshop
+                  </button>
                 </form>
               </div>
             </div>
@@ -1206,6 +1343,12 @@ def admin_excluir():
     
     content += """
         </div>
+      </div>
+      
+      <div class="mt-4">
+        <a href="/admin" class="btn btn-terra">
+          <i class="fas fa-arrow-left me-1"></i> Voltar ao Painel
+        </a>
       </div>
     """
     
@@ -1218,50 +1361,98 @@ def admin_excluir():
 @admin_required
 def admin_participantes():
     participantes = Registration.query.filter_by(paid=True).order_by(Registration.created_at.desc()).all()
+    total_confirmados = len(participantes)
     
-    content = """
+    # Estatísticas por evento
+    eventos_com_inscricoes = {}
+    for p in participantes:
+        if p.evento_id:
+            evento_titulo = p.evento.titulo if p.evento else "Evento Não Especificado"
+            if evento_titulo not in eventos_com_inscricoes:
+                eventos_com_inscricoes[evento_titulo] = 0
+            eventos_com_inscricoes[evento_titulo] += 1
+    
+    content = f"""
       <h3 style="color:var(--terra-1)">Lista de Participantes Confirmados</h3>
+      
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <div class="card bg-success text-white">
+            <div class="card-body text-center">
+              <h4>{total_confirmados}</h4>
+              <p class="mb-0">Total de Confirmados</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card bg-primary text-white">
+            <div class="card-body">
+              <h6>Distribuição por Evento:</h6>
+              {"".join([f'<small>{evento}: {qtd}</small><br>' for evento, qtd in eventos_com_inscricoes.items()]) or "<small>Nenhum evento específico</small>"}
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div class="mb-3">
-        <a href="/admin/exportar_participantes" class="btn btn-terra">Exportar Lista (CSV)</a>
+        <a href="/admin/exportar_participantes" class="btn btn-terra">
+          <i class="fas fa-download me-2"></i> Exportar Lista (CSV)
+        </a>
       </div>
       
       <div class="card">
         <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>CPF</th>
-                  <th>Telefone</th>
-                  <th>Data de Inscrição</th>
-                </tr>
-              </thead>
-              <tbody>
     """
     
     if not participantes:
         content += """
-          <tr>
-            <td colspan="4" class="text-center">Nenhum participante confirmado ainda.</td>
-          </tr>
+          <div class="text-center py-4">
+            <h5>Nenhum participante confirmado ainda</h5>
+            <p class="text-muted">Os participantes aparecerão aqui após confirmarem o pagamento.</p>
+          </div>
         """
     else:
+        content += """
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th>Nome Completo</th>
+                  <th>CPF</th>
+                  <th>Telefone</th>
+                  <th>Evento</th>
+                  <th>Data de Inscrição</th>
+                </tr>
+              </thead>
+              <tbody>
+        """
+        
         for p in participantes:
-            content += """
-            <tr>
-              <td>""" + p.nome + " " + p.sobrenome + """</td>
-              <td>""" + p.cpf + """</td>
-              <td>""" + p.telefone + """</td>
-              <td>""" + p.created_at.strftime('%d/%m/%Y %H:%M') + """</td>
-            </tr>
+            evento_nome = p.evento.titulo if p.evento and p.evento.titulo else "Não Especificado"
+            content += f"""
+                <tr>
+                  <td>{p.nome} {p.sobrenome}</td>
+                  <td>{p.cpf}</td>
+                  <td>{p.telefone}</td>
+                  <td>{evento_nome}</td>
+                  <td>{p.created_at.strftime('%d/%m/%Y %H:%M')}</td>
+                </tr>
             """
-    
-    content += """
+        
+        content += """
               </tbody>
             </table>
           </div>
+        """
+    
+    content += """
         </div>
+      </div>
+      
+      <div class="mt-3">
+        <a href="/admin" class="btn btn-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Voltar ao Painel
+        </a>
       </div>
     """
     
@@ -1279,60 +1470,166 @@ def exportar_participantes():
     participantes = Registration.query.filter_by(paid=True).order_by(Registration.created_at).all()
     
     si = StringIO()
-    cw = csv.writer(si)
-    cw.writerow(['Nome', 'Sobrenome', 'CPF', 'Telefone', 'Data de Inscrição'])
+    cw = csv.writer(si, delimiter=';')
+    cw.writerow(['Nome', 'Sobrenome', 'CPF', 'Telefone', 'Evento', 'Data de Inscrição'])
     
     for p in participantes:
-        cw.writerow([p.nome, p.sobrenome, p.cpf, p.telefone, p.created_at.strftime('%d/%m/%Y %H:%M')])
+        evento_nome = p.evento.titulo if p.evento and p.evento.titulo else "Não Especificado"
+        cw.writerow([
+            p.nome, 
+            p.sobrenome, 
+            p.cpf, 
+            p.telefone, 
+            evento_nome, 
+            p.created_at.strftime('%d/%m/%Y %H:%M')
+        ])
     
     output = si.getvalue()
     si.close()
     
+    from datetime import datetime
+    filename = f"participantes_confirmados_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    
     return send_file(
-        BytesIO(output.encode('utf-8')),
-        mimetype='text/csv',
+        BytesIO(output.encode('utf-8-sig')),
+        mimetype='text/csv; charset=utf-8-sig',
         as_attachment=True,
-        download_name='participantes_confirmados.csv'
+        download_name=filename
     )
 
-# ---------------- Optional: editar/deletar (simples) ----------------
+# ---------------- Admin: Editar Workshop ----------------
 @app.route('/admin/workshop/<int:workshop_id>/editar', methods=['GET', 'POST'])
 @admin_required
 def admin_editar_workshop(workshop_id):
     wk = Workshop.query.get_or_404(workshop_id)
+    
     if request.method == 'POST':
-        wk.titulo = request.form.get('titulo', wk.titulo)
-        wk.data = request.form.get('data', wk.data)
-        wk.horario = request.form.get('horario', wk.horario)
-        wk.local = request.form.get('local', wk.local)
-        wk.abordagem = request.form.get('abordagem', wk.abordagem)
+        wk.titulo = request.form.get('titulo', wk.titulo).strip()
+        wk.data = request.form.get('data', wk.data).strip()
+        wk.horario = request.form.get('horario', wk.horario).strip()
+        wk.local = request.form.get('local', wk.local).strip()
+        wk.abordagem = request.form.get('abordagem', wk.abordagem).strip()
         wk.status = request.form.get('status', wk.status)
+        
+        if not wk.titulo:
+            flash("Título é obrigatório.", "danger")
+            return redirect(url_for('admin_editar_workshop', workshop_id=workshop_id))
+        
         db.session.commit()
-        flash("Workshop atualizado.", "success")
+        flash("Workshop atualizado com sucesso!", "success")
         return redirect(url_for('admin_dashboard'))
-    content = """
+    
+    content = f"""
       <h3 style="color:var(--terra-1)">Editar Workshop</h3>
+      
       <div class="card p-3">
         <form method="POST">
-          <div class="mb-2"><label>Título</label><input name="titulo" value=\"""" + wk.titulo + """\" class="form-control" required></div>
-          <div class="mb-2"><label>Data</label><input name="data" value=\"""" + (wk.data or '') + """\" class="form-control"></div>
-          <div class="mb-2"><label>Horário</label><input name="horario" value=\"""" + (wk.horario or '') + """\" class="form-control"></div>
-          <div class="mb-2"><label>Local</label><input name="local" value=\"""" + (wk.local or '') + """\" class="form-control"></div>
-          <div class="mb-2"><label>Abordagem</label><textarea name="abordagem" class="form-control">""" + (wk.abordagem or '') + """</textarea></div>
-          <div class="mb-2"><label>Status</label>
-            <select name="status" class="form-control">
-              <option value="Em Breve" """ + ("selected" if wk.status=="Em Breve" else "") + """>Em Breve</option>
-              <option value="Aberto" """ + ("selected" if wk.status=="Aberto" else "") + """>Aberto</option>
-            </select>
+          <div class="mb-3">
+            <label class="form-label">Título do Workshop *</label>
+            <input name="titulo" class="form-control" value="{wk.titulo}" required>
           </div>
-          <button class="btn btn-terra">Salvar</button>
+          
+          <div class="row">
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Data</label>
+                <input name="data" type="date" class="form-control" value="{wk.data or ''}">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Horário</label>
+                <input name="horario" class="form-control" value="{wk.horario or ''}" placeholder="Ex: 14h às 17h">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-control">
+                  <option value="Em Breve" {"selected" if wk.status=="Em Breve" else ""}>Em Breve</option>
+                  <option value="Aberto" {"selected" if wk.status=="Aberto" else ""}>Aberto</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Local</label>
+            <input name="local" class="form-control" value="{wk.local or ''}">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Abordagem/Descrição</label>
+            <textarea name="abordagem" class="form-control" rows="5">{wk.abordagem or ''}</textarea>
+          </div>
+          
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-terra">
+              <i class="fas fa-save me-1"></i> Salvar Alterações
+            </button>
+            <a href="/admin" class="btn btn-secondary">Cancelar</a>
+            <a href="/workshop/{workshop_id}" target="_blank" class="btn btn-outline-primary ms-auto">
+              <i class="fas fa-eye me-1"></i> Visualizar Página
+            </a>
+          </div>
         </form>
       </div>
+      
+      <div class="mt-3">
+        <div class="card">
+          <div class="card-body">
+            <h6>Informações do Workshop:</h6>
+            <p><strong>Criado em:</strong> {wk.created_at.strftime('%d/%m/%Y às %H:%M')}</p>
+            <p><strong>ID:</strong> {wk.id}</p>
+          </div>
+        </div>
+      </div>
     """
+    
     return render_template_string(base_css_js.replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
 
+# ---------------- Error Handlers ----------------
+@app.errorhandler(404)
+def page_not_found(e):
+    content = """
+    <div class="text-center py-5">
+        <h1 style="color:var(--terra-1)">Página Não Encontrada</h1>
+        <p class="lead">A página que você está procurando não existe.</p>
+        <a href="/" class="btn btn-terra">Voltar à Página Inicial</a>
+    </div>
+    """
+    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+                                  whatsapp_number=WHATSAPP_NUMBER,
+                                  scripts=""), 404
+
+@app.errorhandler(403)
+def forbidden(e):
+    content = """
+    <div class="text-center py-5">
+        <h1 style="color:var(--terra-1)">Acesso Negado</h1>
+        <p class="lead">Você não tem permissão para acessar esta página.</p>
+        <a href="/" class="btn btn-terra">Voltar à Página Inicial</a>
+    </div>
+    """
+    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+                                  whatsapp_number=WHATSAPP_NUMBER,
+                                  scripts=""), 403
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    content = """
+    <div class="text-center py-5">
+        <h1 style="color:var(--terra-1)">Erro Interno do Servidor</h1>
+        <p class="lead">Ocorreu um erro inesperado. Tente novamente mais tarde.</p>
+        <a href="/" class="btn btn-terra">Voltar à Página Inicial</a>
+    </div>
+    """
+    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+                                  whatsapp_number=WHATSAPP_NUMBER,
+                                  scripts=""), 500
+
 # ---------------- Exec ----------------
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
