@@ -1,4 +1,3 @@
-# app.py
 import os
 from flask import Flask, render_template_string, request, redirect, url_for, send_file, jsonify, session, flash, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -9,12 +8,11 @@ import base64
 
 app = Flask(__name__)
 
-# Configuração do Supabase CORRIGIDA
-supabase_url = "https://wwerfiiqgjnhqxajssfo.supabase.co"
-supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3ZXJmaWlxZ2puaHF4YWpzc2ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNTk3NDUsImV4cCI6MjA3NDgzNTc0NX0.UEH6eCSs6p_mWcZLmuE4Ic5ScZWw3X267rOARKUbJ-o"
-
-# String de conexão CORRETA para Supabase
-database_url = "postgresql://postgres.wwerfiiqgjnhqxajssfo:CODE%402025@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
+# ✅ CONFIGURAÇÃO CORRIGIDA PARA RAILWAY
+# Usa variável de ambiente do Railway e corrige formato da URL
+database_url = os.environ.get('DATABASE_URL', '')
+if database_url and database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -22,7 +20,12 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_recycle': 300,
     'pool_pre_ping': True
 }
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'sua_chave_secreta_aqui_2025_conferencia')
+
+# ✅ SECRET KEY SEGURA
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'fallback-secret-key-2025-conferencia-mulheres')
+
+# ✅ CONFIGURAÇÃO DE PORTA PARA RAILWAY
+port = int(os.environ.get("PORT", 5000))
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -94,13 +97,17 @@ class Workshop(db.Model):
     status = db.Column(db.String(20), default="Em Breve")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# Criar tabelas dentro do contexto da aplicação
-with app.app_context():
+# ✅ FUNÇÃO PARA CRIAR TABELAS DE FORMA SEGURA
+def create_tables():
     try:
-        db.create_all()
-        print("✅ Tabelas criadas/verificadas com sucesso!")
+        with app.app_context():
+            db.create_all()
+            print("✅ Tabelas criadas/verificadas com sucesso!")
     except Exception as e:
         print(f"❌ Erro ao criar tabelas: {e}")
+
+# Chama a função para criar tabelas
+create_tables()
 
 # ---------------- Utilities ----------------
 def allowed_file(filename):
@@ -1924,4 +1931,12 @@ def internal_server_error(e):
 
 # ---------------- Exec ----------------
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    print("🔄 Iniciando aplicação Flask...")
+    print(f"📊 DATABASE_URL: {'✅ Configurada' if os.environ.get('DATABASE_URL') else '❌ Não configurada'}")
+    print(f"🔑 SECRET_KEY: {'✅ Configurada' if os.environ.get('FLASK_SECRET_KEY') else '❌ Não configurada'}")
+    print(f"🚀 Porta: {port}")
+    
+    try:
+        app.run(debug=False, host='0.0.0.0', port=port)
+    except Exception as e:
+        print(f"💥 Erro ao iniciar: {e}")
