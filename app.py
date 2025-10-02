@@ -1312,34 +1312,6 @@ Nos vemos em breve! 💜"""
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts=scripts)
 
-# ---------------- NOVA ROTA: EXCLUIR PARTICIPANTE ----------------
-@app.route('/admin/excluir_participante', methods=['POST'])
-@admin_required
-def admin_excluir_participante():
-    try:
-        data = request.get_json()
-        inscricao_id = data.get('inscricao_id')
-        
-        if not inscricao_id:
-            return jsonify(success=False, message="ID da inscrição não fornecido"), 400
-        
-        inscricao = Registration.query.get(inscricao_id)
-        if not inscricao:
-            return jsonify(success=False, message="Inscrição não encontrada"), 404
-        
-        nome_participante = f"{inscricao.nome} {inscricao.sobrenome}"
-        
-        # Excluir o participante
-        db.session.delete(inscricao)
-        db.session.commit()
-        
-        flash(f"Participante {nome_participante} excluído com sucesso!", "success")
-        return jsonify(success=True)
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify(success=False, message="Erro interno do servidor"), 500
-
 # ---------------- NOVA ROTA: ADMIN - Confirmar Pagamento ----------------
 @app.route('/admin/confirmar_pagamento', methods=['POST'])
 @admin_required
@@ -1367,6 +1339,34 @@ def admin_confirmar_pagamento():
         
         db.session.commit()
         
+        return jsonify(success=True)
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(success=False, message="Erro interno do servidor"), 500
+
+# ---------------- NOVA ROTA: EXCLUIR PARTICIPANTE ----------------
+@app.route('/admin/excluir_participante', methods=['POST'])
+@admin_required
+def admin_excluir_participante():
+    try:
+        data = request.get_json()
+        inscricao_id = data.get('inscricao_id')
+        
+        if not inscricao_id:
+            return jsonify(success=False, message="ID da inscrição não fornecido"), 400
+        
+        inscricao = Registration.query.get(inscricao_id)
+        if not inscricao:
+            return jsonify(success=False, message="Inscrição não encontrada"), 404
+        
+        nome_participante = f"{inscricao.nome} {inscricao.sobrenome}"
+        
+        # Excluir o participante
+        db.session.delete(inscricao)
+        db.session.commit()
+        
+        flash(f"Participante {nome_participante} excluído com sucesso!", "success")
         return jsonify(success=True)
     
     except Exception as e:
@@ -2017,34 +2017,6 @@ def internal_server_error(e):
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts=""), 500
 
-# ---------------- NOVA ROTA: EXCLUIR PARTICIPANTE ----------------
-@app.route('/admin/excluir_participante', methods=['POST'])
-@admin_required
-def admin_excluir_participante():
-    try:
-        data = request.get_json()
-        inscricao_id = data.get('inscricao_id')
-        
-        if not inscricao_id:
-            return jsonify(success=False, message="ID da inscrição não fornecido"), 400
-        
-        inscricao = Registration.query.get(inscricao_id)
-        if not inscricao:
-            return jsonify(success=False, message="Inscrição não encontrada"), 404
-        
-        nome_participante = f"{inscricao.nome} {inscricao.sobrenome}"
-        
-        # Excluir o participante
-        db.session.delete(inscricao)
-        db.session.commit()
-        
-        flash(f"Participante {nome_participante} excluído com sucesso!", "success")
-        return jsonify(success=True)
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify(success=False, message="Erro interno do servidor"), 500                                  
-
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     print("🔄 Iniciando aplicação Flask...")
@@ -2056,5 +2028,3 @@ if __name__ == '__main__':
         app.run(debug=False, host='0.0.0.0', port=port)
     except Exception as e:
         print(f"💥 Erro ao iniciar: {e}")
-
-
