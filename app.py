@@ -7,15 +7,26 @@ from werkzeug.utils import secure_filename
 from io import BytesIO
 import base64
 
-# ---------------- CONFIG ----------------
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///registrations.db').replace('postgres://', 'postgresql://', 1)
+
+# Configuração do Supabase CORRIGIDA
+supabase_url = "https://wwerfiiqgjnhqxajssfo.supabase.co"
+supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3ZXJmaWlxZ2puaHF4YWpzc2ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNTk3NDUsImV4cCI6MjA3NDgzNTc0NX0.UEH6eCSs6p_mWcZLmuE4Ic5ScZWw3X267rOARKUbJ-o"
+
+# String de conexão CORRETA para Supabase
+database_url = "postgresql://postgres.wwerfiiqgjnhqxajssfo:CODE%402025@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'troque_essa_chave_para_producao')
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_recycle': 300,
+    'pool_pre_ping': True
+}
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'sua_chave_secreta_aqui_2025_conferencia')
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
 
 db = SQLAlchemy(app)
 
@@ -48,6 +59,8 @@ class Registration(db.Model):
     telefone = db.Column(db.String(30), nullable=False)
     evento_id = db.Column(db.Integer, db.ForeignKey('evento.id'))
     paid = db.Column(db.Boolean, default=False)
+    status_inscricao = db.Column(db.String(20), default="Pré-inscrito")
+    comprovante_filename = db.Column(db.String(300))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Evento(db.Model):
@@ -83,7 +96,11 @@ class Workshop(db.Model):
 
 # Criar tabelas dentro do contexto da aplicação
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+        print("✅ Tabelas criadas/verificadas com sucesso!")
+    except Exception as e:
+        print(f"❌ Erro ao criar tabelas: {e}")
 
 # ---------------- Utilities ----------------
 def allowed_file(filename):
@@ -215,6 +232,9 @@ base_css_js = """
       .admin-back-btn {
         margin-bottom: 20px;
       }
+      
+      .status-preinscrito { color: #856404; background-color: #fff3cd; border-color: #ffeaa7; }
+      .status-confirmado { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
     </style>
   </head>
   <body>
@@ -548,65 +568,79 @@ def get_inscricao_form(evento):
       <p><strong>Descrição:</strong> {evento.descricao or 'Em breve mais informações'}</p>
     </div>
 
-    <form id="regForm" method="POST" action="/submit_inscricao">
-      <input type="hidden" name="evento_id" value="{evento.id}">
+    <div id="dadosPessoais">
       <h4 style="color:var(--terra-2)">Dados Pessoais</h4>
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Nome</label>
-          <input name="nome" class="form-control" required>
+      <form id="preInscricaoForm" method="POST" action="/submit_pre_inscricao" enctype="multipart/form-data">
+        <input type="hidden" name="evento_id" value="{evento.id}">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Nome</label>
+            <input name="nome" class="form-control" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Sobrenome</label>
+            <input name="sobrenome" class="form-control" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">CPF</label>
+            <input name="cpf" class="form-control" required placeholder="000.000.000-00">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Telefone (WhatsApp)</label>
+            <input name="telefone" class="form-control" required placeholder="(00) 00000-0000">
+          </div>
         </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Sobrenome</label>
-          <input name="sobrenome" class="form-control" required>
+
+        <div class="mb-3 p-3" style="background-color: var(--terra-4); border-radius: 8px;">
+          <strong>Valor da inscrição: R$ {valor_inscricao}</strong>
         </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">CPF</label>
-          <input name="cpf" class="form-control" required placeholder="000.000.000-00">
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Telefone</label>
-          <input name="telefone" class="form-control" required placeholder="(00) 00000-0000">
-        </div>
+
+        <button type="submit" class="btn btn-terra btn-lg">Pré-Inscrição</button>
+      </form>
+    </div>
+
+    <div id="pagamentoSection" style="display: none;">
+      <div class="alert alert-info mt-4">
+        <h5>Agora, escaneie o QR Code ou copie a chave Pix para efetuar o pagamento.</h5>
       </div>
 
-      <div class="mb-3 p-3" style="background-color: var(--terra-4); border-radius: 8px;">
-        <strong>Valor da inscrição: R$ {valor_inscricao}</strong>
-      </div>
-
-      <button type="submit" class="btn btn-terra btn-lg">Efetuar pagamento</button>
-    </form>
-  </div>
-
-  <!-- modal do QR -->
-  <div class="modal fade" id="qrModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content p-3">
-        <div class="modal-header">
-          <h5 class="modal-title">Pagamento via PIX</h5>
-          <button class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body text-center">
+      <div class="row mt-4">
+        <div class="col-md-6">
           <div class="pix-info">
             <p>Valor a ser pago: <strong>R$ {valor_inscricao}</strong></p>
             <p>Chave Pix: <span class="pix-key">{PIX_KEY}</span></p>
+            <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyPixKey()">
+              <i class="fas fa-copy me-1"></i> Copiar Chave
+            </button>
           </div>
-
-          <p>Escaneie o QR Code abaixo para realizar o pagamento:</p>
-          <img id="qrImage" class="qr-img" src="{qr_code_url}" alt="QR Code Pix">
-
-          <div class="mt-3">
-            <button id="confirmPayBtn" class="btn btn-success">Confirmar pagamento</button>
-          </div>
-          
-          <div class="mt-4 p-3" style="background-color: #f0f8f0; border-radius: 8px;">
-            <h6>Entre no Grupo do WhatsApp - Transformadas</h6>
-            <p>Após confirmar o pagamento, entre no nosso grupo para receber todas as informações:</p>
-            <a href="https://chat.whatsapp.com/ICWsAlDkaFZ7vmcZme0Myr?mode=ems_wa_t" target="_blank" class="btn btn-success">
-              <i class="fab fa-whatsapp me-2"></i> Entrar no Grupo
-            </a>
-          </div>
+          <img class="qr-img mt-3" src="{qr_code_url}" alt="QR Code Pix">
         </div>
+        
+        <div class="col-md-6">
+          <form id="comprovanteForm" method="POST" action="/upload_comprovante" enctype="multipart/form-data">
+            <input type="hidden" name="pre_inscricao_id" id="preInscricaoId">
+            <div class="mb-3">
+              <label class="form-label">Envie o comprovante de pagamento</label>
+              <input type="file" name="comprovante" class="form-control" accept=".png,.jpg,.jpeg,.gif,.webp,.pdf" required>
+              <small class="text-muted">Formatos aceitos: PNG, JPG, JPEG, GIF, WEBP, PDF (tamanho máximo: 5MB)</small>
+            </div>
+            <button type="submit" class="btn btn-success btn-lg">
+              <i class="fas fa-upload me-2"></i> Enviar Comprovante
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="confirmacaoSection" style="display: none;">
+      <div class="alert alert-success mt-4">
+        <h5>Parabéns, sua pré-inscrição foi confirmada! Em breve entraremos em contato para validar sua inscrição.</h5>
+      </div>
+      
+      <div class="text-center mt-4">
+        <a href="https://chat.whatsapp.com/ICWsAlDkaFZ7vmcZme0Myr?mode=ems_wa_t" target="_blank" class="btn btn-success btn-lg">
+          <i class="fab fa-whatsapp me-2"></i> Entrar no grupo do WhatsApp Renovadas
+        </a>
       </div>
     </div>
   </div>
@@ -614,36 +648,62 @@ def get_inscricao_form(evento):
 
 inscricao_scripts = """
 <script>
-  document.addEventListener('DOMContentLoaded', function(){
-    const params = new URLSearchParams(window.location.search);
-    const show_qr = params.get('show_qr');
-    const reg_id = params.get('id');
-    if (show_qr === '1' && reg_id){
-      var qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
-      qrModal.show();
+  function copyPixKey() {
+    const pixKey = '""" + PIX_KEY + """';
+    navigator.clipboard.writeText(pixKey).then(function() {
+      alert('Chave PIX copiada para a área de transferência!');
+    }, function(err) {
+      console.error('Erro ao copiar chave: ', err);
+    });
+  }
 
-      document.getElementById('confirmPayBtn').onclick = function(){
-        fetch("/confirm_payment", {
-          method: "POST",
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ reg_id: reg_id })
-        })
-        .then(r => r.json())
-        .then(resp => {
-          if (resp.success){
-            var w = window.open("/print_confirmation/" + reg_id, "_blank");
-            var msg = encodeURIComponent("Confirmação de inscrição: Nome: " + resp.nome + " CPF: " + resp.cpf + " - Pagamento confirmado.");
-            var wa = "https://wa.me/" + resp.whatsapp + "?text=" + msg;
-            window.open(wa, "_blank");
-            qrModal.hide();
-            setTimeout(()=>{ window.location = "/inscricao"; }, 800);
-          } else {
-            alert("Erro ao confirmar pagamento.");
-          }
-        })
-        .catch(e => { console.error(e); alert("Erro de rede."); });
-      };
-    }
+  document.getElementById('preInscricaoForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/submit_pre_inscricao', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('dadosPessoais').style.display = 'none';
+        document.getElementById('pagamentoSection').style.display = 'block';
+        document.getElementById('preInscricaoId').value = data.inscricao_id;
+      } else {
+        alert('Erro ao realizar pré-inscrição: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Erro ao realizar pré-inscrição');
+    });
+  });
+
+  document.getElementById('comprovanteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/upload_comprovante', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('pagamentoSection').style.display = 'none';
+        document.getElementById('confirmacaoSection').style.display = 'block';
+      } else {
+        alert('Erro ao enviar comprovante: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Erro ao enviar comprovante');
+    });
   });
 </script>
 """
@@ -771,27 +831,83 @@ def inscricao(evento_id=None):
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts=inscricao_scripts)
 
-@app.route('/submit_inscricao', methods=['POST'])
-def submit_inscricao():
-    nome = request.form.get('nome', '').strip()
-    sobrenome = request.form.get('sobrenome', '').strip()
-    cpf = request.form.get('cpf', '').strip()
-    telefone = request.form.get('telefone', '').strip()
-    evento_id = request.form.get('evento_id')
+# ---------------- NOVAS ROTAS PARA PRÉ-INSCRIÇÃO ----------------
+@app.route('/submit_pre_inscricao', methods=['POST'])
+def submit_pre_inscricao():
+    try:
+        nome = request.form.get('nome', '').strip()
+        sobrenome = request.form.get('sobrenome', '').strip()
+        cpf = request.form.get('cpf', '').strip()
+        telefone = request.form.get('telefone', '').strip()
+        evento_id = request.form.get('evento_id')
+        
+        if not (nome and sobrenome and cpf and telefone):
+            return jsonify(success=False, message="Preencha todos os campos"), 400
+        
+        evento = None
+        if evento_id:
+            evento = Evento.query.get(evento_id)
+            if not evento or evento.status != 'Aberto':
+                return jsonify(success=False, message="Evento não encontrado ou inscrições encerradas"), 400
+        
+        # Verificar se já existe inscrição com este CPF para o mesmo evento
+        existing_reg = Registration.query.filter_by(cpf=cpf, evento_id=evento_id).first()
+        if existing_reg:
+            return jsonify(success=False, message="Já existe uma inscrição com este CPF para este evento"), 400
+        
+        reg = Registration(
+            nome=nome, 
+            sobrenome=sobrenome, 
+            cpf=cpf, 
+            telefone=telefone, 
+            evento_id=evento_id,
+            status_inscricao="Pré-inscrito"
+        )
+        db.session.add(reg)
+        db.session.commit()
+        
+        return jsonify(success=True, inscricao_id=reg.id)
     
-    if not (nome and sobrenome and cpf and telefone):
-        return "Preencha todos os campos", 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(success=False, message="Erro interno do servidor"), 500
+
+@app.route('/upload_comprovante', methods=['POST'])
+def upload_comprovante():
+    try:
+        inscricao_id = request.form.get('pre_inscricao_id')
+        comprovante = request.files.get('comprovante')
+        
+        if not inscricao_id:
+            return jsonify(success=False, message="ID da inscrição não fornecido"), 400
+        
+        if not comprovante or comprovante.filename == '':
+            return jsonify(success=False, message="Nenhum arquivo selecionado"), 400
+        
+        if not allowed_file(comprovante.filename):
+            return jsonify(success=False, message="Tipo de arquivo não permitido"), 400
+        
+        # Verificar tamanho do arquivo (limite de 5MB)
+        comprovante.seek(0, 2)  # Ir para o final do arquivo
+        file_size = comprovante.tell()
+        comprovante.seek(0)  # Voltar para o início
+        if file_size > 5 * 1024 * 1024:  # 5MB
+            return jsonify(success=False, message="Arquivo muito grande. Tamanho máximo: 5MB"), 400
+        
+        reg = Registration.query.get(inscricao_id)
+        if not reg:
+            return jsonify(success=False, message="Inscrição não encontrada"), 404
+        
+        # Salvar o comprovante
+        filename = save_uploaded_file(comprovante)
+        reg.comprovante_filename = filename
+        db.session.commit()
+        
+        return jsonify(success=True)
     
-    evento = None
-    if evento_id:
-        evento = Evento.query.get(evento_id)
-        if not evento or evento.status != 'Aberto':
-            return "Evento não encontrado ou inscrições encerradas", 400
-    
-    reg = Registration(nome=nome, sobrenome=sobrenome, cpf=cpf, telefone=telefone, evento_id=evento_id)
-    db.session.add(reg)
-    db.session.commit()
-    return redirect(url_for('inscricao') + f"?show_qr=1&id={reg.id}")
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(success=False, message="Erro interno do servidor"), 500
 
 @app.route('/confirm_payment', methods=['POST'])
 def confirm_payment():
@@ -878,7 +994,6 @@ def ver_workshop(workshop_id):
 # ---------------- ADMIN Routes (PROTEGIDAS) ----------------
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
-    # Se já está logado, redireciona para o dashboard
     if session.get('admin_logged'):
         return redirect(url_for('admin_dashboard'))
         
@@ -958,6 +1073,13 @@ def admin_dashboard():
             <a class="btn btn-terra" href="/admin/participantes">Ver Participantes</a>
           </div>
         </div>
+        <div class="col-md-4">
+          <div class="card p-3 mb-3 event-card">
+            <h5>Pré-Inscrições</h5>
+            <p>Gerenciar pré-inscrições e confirmar pagamentos.</p>
+            <a class="btn btn-terra" href="/admin/pre_inscricoes">Ver Pré-Inscrições</a>
+          </div>
+        </div>
       </div>
       <hr />
       <h4>Eventos Abertos</h4>
@@ -985,6 +1107,176 @@ def admin_dashboard():
     return render_template_string(base_css_js.replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts="")
+
+# ---------------- NOVA ROTA: ADMIN - Lista de Pré-Inscrições ----------------
+@app.route('/admin/pre_inscricoes')
+@admin_required
+def admin_pre_inscricoes():
+    pre_inscricoes = Registration.query.order_by(Registration.created_at.desc()).all()
+    
+    content = """
+      <h2 style="color:var(--terra-1)">Lista de Pré-Inscrições</h2>
+      <div class="card">
+        <div class="card-body">
+    """
+    
+    if not pre_inscricoes:
+        content += """
+          <div class="text-center py-4">
+            <h5>Nenhuma pré-inscrição encontrada</h5>
+            <p class="text-muted">As pré-inscrições aparecerão aqui quando os usuários se inscreverem.</p>
+          </div>
+        """
+    else:
+        content += """
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th>Nome Completo</th>
+                  <th>CPF</th>
+                  <th>Telefone</th>
+                  <th>Evento</th>
+                  <th>Status</th>
+                  <th>Comprovante</th>
+                  <th>Pagamento Confirmado</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+        """
+        
+        for inscricao in pre_inscricoes:
+            evento_nome = inscricao.evento.titulo if inscricao.evento and inscricao.evento.titulo else "Não Especificado"
+            status_class = "status-confirmado" if inscricao.status_inscricao == "Inscrição Confirmada" else "status-preinscrito"
+            
+            comprovante_html = "Não enviado"
+            if inscricao.comprovante_filename:
+                comprovante_url = f"/static/uploads/{inscricao.comprovante_filename}"
+                comprovante_html = f'<a href="{comprovante_url}" target="_blank" class="btn btn-sm btn-outline-primary">Ver Comprovante</a>'
+            
+            checkbox_html = f"""
+            <input type="checkbox" class="form-check-input confirm-pagamento" 
+                   data-inscricao-id="{inscricao.id}" 
+                   {'checked' if inscricao.status_inscricao == 'Inscrição Confirmada' else ''}>
+            """
+            
+            whatsapp_link = f"https://wa.me/55{inscricao.telefone.replace(' ', '').replace('(', '').replace(')', '').replace('-', '')}"
+            mensagem_whatsapp = f"Parabéns, sua inscrição foi confirmada com sucesso! 🎉"
+            whatsapp_url = f"{whatsapp_link}?text={mensagem_whatsapp}"
+            
+            acoes_html = f"""
+            <a href="{whatsapp_url}" target="_blank" class="btn btn-sm btn-success {'disabled' if inscricao.status_inscricao != 'Inscrição Confirmada' else ''}">
+              <i class="fab fa-whatsapp"></i> Enviar Mensagem
+            </a>
+            """
+            
+            content += f"""
+                <tr>
+                  <td>{inscricao.nome} {inscricao.sobrenome}</td>
+                  <td>{inscricao.cpf}</td>
+                  <td>{inscricao.telefone}</td>
+                  <td>{evento_nome}</td>
+                  <td><span class="badge {status_class}">{inscricao.status_inscricao}</span></td>
+                  <td>{comprovante_html}</td>
+                  <td>{checkbox_html}</td>
+                  <td>{acoes_html}</td>
+                </tr>
+            """
+        
+        content += """
+              </tbody>
+            </table>
+          </div>
+        """
+    
+    content += """
+        </div>
+      </div>
+      
+      <div class="mt-3">
+        <a href="/admin" class="btn btn-terra">
+          <i class="fas fa-arrow-left me-1"></i> Voltar para Área do Administrador
+        </a>
+      </div>
+    """
+    
+    scripts = """
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.confirm-pagamento');
+        
+        checkboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', function() {
+            const inscricaoId = this.getAttribute('data-inscricao-id');
+            const isConfirmed = this.checked;
+            
+            fetch('/admin/confirmar_pagamento', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                inscricao_id: inscricaoId,
+                confirmado: isConfirmed
+              })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                location.reload();
+              } else {
+                alert('Erro ao confirmar pagamento: ' + data.message);
+                this.checked = !isConfirmed;
+              }
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Erro ao confirmar pagamento');
+              this.checked = !isConfirmed;
+            });
+          });
+        });
+      });
+    </script>
+    """
+    
+    return render_template_string(base_css_js.replace("{{ content|safe }}", content),
+                                  whatsapp_number=WHATSAPP_NUMBER,
+                                  scripts=scripts)
+
+# ---------------- NOVA ROTA: ADMIN - Confirmar Pagamento ----------------
+@app.route('/admin/confirmar_pagamento', methods=['POST'])
+@admin_required
+def admin_confirmar_pagamento():
+    try:
+        data = request.get_json()
+        inscricao_id = data.get('inscricao_id')
+        confirmado = data.get('confirmado')
+        
+        if not inscricao_id:
+            return jsonify(success=False, message="ID da inscrição não fornecido"), 400
+        
+        inscricao = Registration.query.get(inscricao_id)
+        if not inscricao:
+            return jsonify(success=False, message="Inscrição não encontrada"), 404
+        
+        if confirmado:
+            inscricao.status_inscricao = "Inscrição Confirmada"
+            inscricao.paid = True
+            flash(f"Pagamento confirmado para {inscricao.nome} {inscricao.sobrenome}", "success")
+        else:
+            inscricao.status_inscricao = "Pré-inscrito"
+            inscricao.paid = False
+            flash(f"Status revertido para pré-inscrição para {inscricao.nome} {inscricao.sobrenome}", "info")
+        
+        db.session.commit()
+        
+        return jsonify(success=True)
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(success=False, message="Erro interno do servidor"), 500
 
 # ---------------- Admin: Novo Evento ----------------
 @app.route('/admin/evento/novo', methods=['GET', 'POST'])
@@ -1114,7 +1406,6 @@ def admin_ajuste_evento_closing(evento_id):
             flash("O texto de agradecimento é obrigatório.", "danger")
             return redirect(url_for('admin_ajuste_evento_closing', evento_id=evento_id))
         
-        # Salvar fotos
         saved_files = []
         for f in valid_files:
             try:
@@ -1130,7 +1421,6 @@ def admin_ajuste_evento_closing(evento_id):
                 flash(f"Erro ao salvar arquivo {f.filename}: {str(e)}", "danger")
                 continue
         
-        # Atualizar evento
         ev.status = 'Fechado'
         ev.agradecimento = agradecimento
         db.session.commit()
@@ -1251,11 +1541,8 @@ def admin_excluir():
         if tipo == 'evento':
             evento = Evento.query.get(id_item)
             if evento:
-                # Excluir fotos associadas primeiro
                 FotoEvento.query.filter_by(evento_id=id_item).delete()
-                # Excluir inscrições associadas
                 Registration.query.filter_by(evento_id=id_item).delete()
-                # Excluir evento
                 db.session.delete(evento)
                 db.session.commit()
                 flash("Evento excluído com sucesso!", "success")
@@ -1366,10 +1653,9 @@ def admin_excluir():
 @app.route('/admin/participantes')
 @admin_required
 def admin_participantes():
-    participantes = Registration.query.filter_by(paid=True).order_by(Registration.created_at.desc()).all()
+    participantes = Registration.query.filter_by(status_inscricao="Inscrição Confirmada").order_by(Registration.created_at.desc()).all()
     total_confirmados = len(participantes)
     
-    # Estatísticas por evento
     eventos_com_inscricoes = {}
     for p in participantes:
         if p.evento_id:
@@ -1473,7 +1759,7 @@ def exportar_participantes():
     import csv
     from io import StringIO
     
-    participantes = Registration.query.filter_by(paid=True).order_by(Registration.created_at).all()
+    participantes = Registration.query.filter_by(status_inscricao="Inscrição Confirmada").order_by(Registration.created_at).all()
     
     si = StringIO()
     cw = csv.writer(si, delimiter=';')
