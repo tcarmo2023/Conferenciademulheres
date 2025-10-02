@@ -8,13 +8,22 @@ import base64
 
 app = Flask(__name__)
 
-# ✅ CONFIGURAÇÃO CORRIGIDA PARA RAILWAY
-# Usa variável de ambiente do Railway e corrige formato da URL
-database_url = os.environ.get('DATABASE_URL', '')
-if database_url and database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+# ✅ CORREÇÃO DEFINITIVA PARA DATABASE_URL
+def get_database_url():
+    # Tenta pegar do Railway primeiro
+    railway_db_url = os.environ.get('DATABASE_URL', '')
+    
+    if railway_db_url:
+        # Corrige formato se necessário
+        if railway_db_url.startswith('postgres://'):
+            railway_db_url = railway_db_url.replace('postgres://', 'postgresql://', 1)
+        return railway_db_url
+    
+    # Fallback para string local (apenas para desenvolvimento)
+    return "sqlite:///local.db"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# ✅ CONFIGURAÇÃO DO BANCO DE DADOS
+app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_recycle': 300,
@@ -103,6 +112,7 @@ def create_tables():
         with app.app_context():
             db.create_all()
             print("✅ Tabelas criadas/verificadas com sucesso!")
+            print(f"📊 Database URL: {app.config['SQLALCHEMY_DATABASE_URI'][:50]}...")  # Mostra apenas parte da URL por segurança
     except Exception as e:
         print(f"❌ Erro ao criar tabelas: {e}")
 
@@ -1932,7 +1942,7 @@ def internal_server_error(e):
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     print("🔄 Iniciando aplicação Flask...")
-    print(f"📊 DATABASE_URL: {'✅ Configurada' if os.environ.get('DATABASE_URL') else '❌ Não configurada'}")
+    print(f"📊 DATABASE_URL configurada: {'✅ SIM' if app.config['SQLALCHEMY_DATABASE_URI'] else '❌ NÃO'}")
     print(f"🔑 SECRET_KEY: {'✅ Configurada' if os.environ.get('FLASK_SECRET_KEY') else '❌ Não configurada'}")
     print(f"🚀 Porta: {port}")
     
@@ -1940,3 +1950,4 @@ if __name__ == '__main__':
         app.run(debug=False, host='0.0.0.0', port=port)
     except Exception as e:
         print(f"💥 Erro ao iniciar: {e}")
+
