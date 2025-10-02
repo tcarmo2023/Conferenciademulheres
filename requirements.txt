@@ -6,4 +6,5 @@ pandas
 gspread
 google-auth
 google-auth-oauthlib
+psycopg2-binary==2.9.7
 werkzeug
