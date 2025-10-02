@@ -1178,14 +1178,28 @@ def admin_pre_inscricoes():
                    {'checked' if inscricao.status_inscricao == 'Inscrição Confirmada' else ''}>
             """
             
+            # ✅ MENSAGEM DO WHATSAPP MELHORADA
+            nome_evento = evento_nome if evento_nome != "Não Especificado" else "Conferência de Mulheres"
+            mensagem_whatsapp = f"""🎉 Parabéns! Sua inscrição foi confirmada com sucesso.
+
+Você agora faz parte da {nome_evento} ✨
+
+Prepare o coração, pois será um tempo especial de renovação, comunhão e presença de Deus.
+
+Nos vemos em breve! 💜"""
+            
             whatsapp_link = f"https://wa.me/55{inscricao.telefone.replace(' ', '').replace('(', '').replace(')', '').replace('-', '')}"
-            mensagem_whatsapp = f"Parabéns, sua inscrição foi confirmada com sucesso! 🎉"
-            whatsapp_url = f"{whatsapp_link}?text={mensagem_whatsapp}"
+            whatsapp_url = f"{whatsapp_link}?text={mensagem_whatsapp.replace(chr(10), '%0A')}"
             
             acoes_html = f"""
-            <a href="{whatsapp_url}" target="_blank" class="btn btn-sm btn-success {'disabled' if inscricao.status_inscricao != 'Inscrição Confirmada' else ''}">
-              <i class="fab fa-whatsapp"></i> Enviar Mensagem
-            </a>
+            <div class="btn-group-vertical" role="group">
+                <a href="{whatsapp_url}" target="_blank" class="btn btn-sm btn-success {'disabled' if inscricao.status_inscricao != 'Inscrição Confirmada' else ''}">
+                    <i class="fab fa-whatsapp"></i> Enviar Mensagem
+                </a>
+                <button class="btn btn-sm btn-danger excluir-participante" data-inscricao-id="{inscricao.id}" data-nome="{inscricao.nome} {inscricao.sobrenome}">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
             """
             
             content += f"""
@@ -1221,6 +1235,7 @@ def admin_pre_inscricoes():
     scripts = """
     <script>
       document.addEventListener('DOMContentLoaded', function() {
+        // ✅ CONFIRMAR PAGAMENTO
         const checkboxes = document.querySelectorAll('.confirm-pagamento');
         
         checkboxes.forEach(checkbox => {
@@ -1254,6 +1269,41 @@ def admin_pre_inscricoes():
             });
           });
         });
+
+        // ✅ EXCLUIR PARTICIPANTE
+        const botoesExcluir = document.querySelectorAll('.excluir-participante');
+        
+        botoesExcluir.forEach(botao => {
+          botao.addEventListener('click', function() {
+            const inscricaoId = this.getAttribute('data-inscricao-id');
+            const nomeParticipante = this.getAttribute('data-nome');
+            
+            if (confirm(`ATENÇÃO! Tem certeza que deseja excluir permanentemente a inscrição de ${nomeParticipante}?\\n\\nEsta ação não pode ser desfeita!`)) {
+              fetch('/admin/excluir_participante', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  inscricao_id: inscricaoId
+                })
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  alert('Participante excluído com sucesso!');
+                  location.reload();
+                } else {
+                  alert('Erro ao excluir participante: ' + data.message);
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                alert('Erro ao excluir participante');
+              });
+            }
+          });
+        });
       });
     </script>
     """
@@ -1261,6 +1311,34 @@ def admin_pre_inscricoes():
     return render_template_string(base_css_js.replace("{{ content|safe }}", content),
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts=scripts)
+
+# ---------------- NOVA ROTA: EXCLUIR PARTICIPANTE ----------------
+@app.route('/admin/excluir_participante', methods=['POST'])
+@admin_required
+def admin_excluir_participante():
+    try:
+        data = request.get_json()
+        inscricao_id = data.get('inscricao_id')
+        
+        if not inscricao_id:
+            return jsonify(success=False, message="ID da inscrição não fornecido"), 400
+        
+        inscricao = Registration.query.get(inscricao_id)
+        if not inscricao:
+            return jsonify(success=False, message="Inscrição não encontrada"), 404
+        
+        nome_participante = f"{inscricao.nome} {inscricao.sobrenome}"
+        
+        # Excluir o participante
+        db.session.delete(inscricao)
+        db.session.commit()
+        
+        flash(f"Participante {nome_participante} excluído com sucesso!", "success")
+        return jsonify(success=True)
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(success=False, message="Erro interno do servidor"), 500
 
 # ---------------- NOVA ROTA: ADMIN - Confirmar Pagamento ----------------
 @app.route('/admin/confirmar_pagamento', methods=['POST'])
@@ -1939,6 +2017,34 @@ def internal_server_error(e):
                                   whatsapp_number=WHATSAPP_NUMBER,
                                   scripts=""), 500
 
+# ---------------- NOVA ROTA: EXCLUIR PARTICIPANTE ----------------
+@app.route('/admin/excluir_participante', methods=['POST'])
+@admin_required
+def admin_excluir_participante():
+    try:
+        data = request.get_json()
+        inscricao_id = data.get('inscricao_id')
+        
+        if not inscricao_id:
+            return jsonify(success=False, message="ID da inscrição não fornecido"), 400
+        
+        inscricao = Registration.query.get(inscricao_id)
+        if not inscricao:
+            return jsonify(success=False, message="Inscrição não encontrada"), 404
+        
+        nome_participante = f"{inscricao.nome} {inscricao.sobrenome}"
+        
+        # Excluir o participante
+        db.session.delete(inscricao)
+        db.session.commit()
+        
+        flash(f"Participante {nome_participante} excluído com sucesso!", "success")
+        return jsonify(success=True)
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(success=False, message="Erro interno do servidor"), 500                                  
+
 # ---------------- Exec ----------------
 if __name__ == '__main__':
     print("🔄 Iniciando aplicação Flask...")
@@ -1950,4 +2056,5 @@ if __name__ == '__main__':
         app.run(debug=False, host='0.0.0.0', port=port)
     except Exception as e:
         print(f"💥 Erro ao iniciar: {e}")
+
 
